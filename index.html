@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Judy Ni - Payments &amp; FX Relationship Manager</title>
+<meta name="description" content="Judy Ni - Payments &amp; FX relationship manager, Rapyd. Cross-border payments, key account management, APAC/EEA.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Epilogue:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --black:#000000;
+    --yellow:#FCFF00;
+    --pink:#FF007A;
+    --purple:#5600EF;
+    --green:#00FF89;
+    --white:#FFFFFF;
+    --off-white:#F5F5F5;
+    --max-w:1100px;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:var(--black);
+    color:var(--off-white);
+    font-family:'Epilogue',sans-serif;
+    font-weight:400;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3,.label{
+    font-family:'Anton',sans-serif;
+    font-weight:400;
+    text-transform:uppercase;
+    letter-spacing:0;
+    line-height:0.95;
+  }
+
+  a{color:var(--yellow);text-decoration:none;}
+  a:hover, a:focus-visible{text-decoration:underline;}
+
+  a:focus-visible, button:focus-visible{
+    outline:3px solid var(--yellow);
+    outline-offset:3px;
+  }
+
+  img{max-width:100%;display:block;}
+
+  .skip-link{
+    position:absolute;
+    left:-999px;
+    top:0;
+    background:var(--yellow);
+    color:var(--black);
+    padding:12px 20px;
+    font-family:'Epilogue',sans-serif;
+    font-weight:700;
+    z-index:100;
+  }
+  .skip-link:focus{left:16px;top:16px;}
+
+  .wrap{
+    max-width:var(--max-w);
+    margin:0 auto;
+    padding:0 24px;
+  }
+
+  /* ---------- NAV ---------- */
+  .topnav{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:2px solid var(--yellow);
+  }
+  .topnav .wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding-top:14px;
+    padding-bottom:14px;
+  }
+  .topnav .mark{
+    font-family:'Anton',sans-serif;
+    font-size:1.3rem;
+    color:var(--yellow);
+  }
+  .topnav nav{display:none;}
+  .topnav nav a{
+    color:var(--off-white);
+    font-weight:700;
+    font-size:0.85rem;
+    text-transform:uppercase;
+    margin-left:24px;
+  }
+  .topnav nav a:hover{color:var(--yellow);text-decoration:none;}
+
+  @media (min-width:768px){
+    .topnav nav{display:block;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:88vh;
+    display:flex;
+    align-items:center;
+    padding:64px 0 56px;
+    border-bottom:2px solid var(--yellow);
+  }
+  .monogram{
+    width:104px;
+    height:104px;
+    border-radius:50%;
+    border:3px solid var(--yellow);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:28px;
+  }
+  .monogram span{
+    font-family:'Anton',sans-serif;
+    font-size:2.6rem;
+    color:var(--pink);
+  }
+  .hero .eyebrow{
+    color:var(--yellow);
+    font-weight:800;
+    font-size:0.8rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .hero h1{
+    font-size:clamp(1.9rem, 6.5vw, 3.4rem);
+    color:var(--white);
+    margin-bottom:20px;
+  }
+  .hero .oneliner{
+    font-size:clamp(1.1rem, 3vw, 1.4rem);
+    color:var(--off-white);
+    max-width:640px;
+    margin-bottom:28px;
+  }
+  .hero .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:32px;
+  }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:2px solid var(--off-white);
+    color:var(--off-white);
+    font-size:0.8rem;
+    font-weight:700;
+    padding:7px 14px;
+    border-radius:999px;
+  }
+  .pill.current{
+    border-color:var(--yellow);
+    color:var(--yellow);
+  }
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;}
+  .btn{
+    display:inline-block;
+    font-weight:800;
+    font-size:0.95rem;
+    padding:14px 28px;
+    border-radius:2px;
+    border:2px solid var(--yellow);
+  }
+  .btn-solid{
+    background:var(--yellow);
+    color:var(--black);
+  }
+  .btn-solid:hover, .btn-solid:focus-visible{
+    background:transparent;
+    color:var(--yellow);
+    text-decoration:none;
+  }
+  .btn-outline{
+    background:transparent;
+    color:var(--yellow);
+  }
+  .btn-outline:hover, .btn-outline:focus-visible{
+    background:var(--yellow);
+    color:var(--black);
+    text-decoration:none;
+  }
+
+  /* ---------- SECTION SHELL ---------- */
+  section{
+    padding:72px 0;
+    border-bottom:1px solid #1a1a1a;
+  }
+  .section-label{
+    color:var(--pink);
+    font-weight:800;
+    font-size:0.78rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  h2.section-title{
+    font-size:clamp(calc(2rem + 5px), 6vw, calc(3rem + 5px));
+    color:var(--white);
+    margin-bottom:32px;
+  }
+
+  /* ---------- ABOUT ---------- */
+  .about-body{
+    font-size:1.05rem;
+    color:var(--off-white);
+    max-width:760px;
+  }
+  .about-body p{margin-bottom:18px;}
+  .about-body strong{color:var(--yellow);font-weight:800;}
+
+  /* ---------- SKILLS ---------- */
+  .skills-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .skill-tag{
+    border:2px solid var(--off-white);
+    color:var(--off-white);
+    font-weight:700;
+    font-size:0.9rem;
+    padding:10px 18px;
+    border-radius:999px;
+  }
+  .skill-tag:nth-child(3n+1){border-color:var(--yellow);color:var(--yellow);}
+  .skill-tag:nth-child(3n+2){border-color:var(--pink);color:var(--pink);}
+
+  /* ---------- TIMELINE ---------- */
+  .timeline{
+    position:relative;
+    padding-left:28px;
+    border-left:2px solid var(--yellow);
+  }
+  .tl-item{
+    position:relative;
+    padding-bottom:44px;
+  }
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:"";
+    position:absolute;
+    left:-35px;
+    top:4px;
+    width:12px;
+    height:12px;
+    background:var(--black);
+    border:3px solid var(--yellow);
+    border-radius:50%;
+  }
+  .tl-item.current::before{
+    background:var(--yellow);
+  }
+  .tl-dates{
+    color:var(--yellow);
+    font-weight:800;
+    font-size:0.82rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:6px;
+  }
+  .tl-role{
+    font-family:'Anton',sans-serif;
+    font-size:1.4rem;
+    color:var(--white);
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .tl-company{
+    color:var(--pink);
+    font-weight:800;
+    font-size:1.15rem;
+    margin-bottom:10px;
+  }
+  .tl-desc{
+    color:var(--off-white);
+    font-size:0.95rem;
+    max-width:600px;
+  }
+  .tl-desc p{margin-bottom:8px;}
+  .tl-highlight{
+    margin-top:16px;
+    padding:20px;
+    border:2px solid var(--yellow);
+    background:rgba(252,255,0,0.06);
+    max-width:600px;
+  }
+  .tl-highlight-tag{
+    display:inline-block;
+    background:var(--yellow);
+    color:var(--black);
+    font-weight:800;
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:10px;
+  }
+  .tl-highlight-role{
+    font-family:'Anton',sans-serif;
+    font-size:1.15rem;
+    color:var(--white);
+    text-transform:uppercase;
+    margin-bottom:2px;
+  }
+  .tl-highlight-company{
+    color:var(--pink);
+    font-weight:800;
+    font-size:0.95rem;
+    margin-bottom:6px;
+  }
+  .tl-highlight-dates{
+    color:var(--yellow);
+    font-weight:700;
+    font-size:0.8rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:10px;
+  }
+  .tl-highlight-desc{
+    color:var(--off-white);
+    font-size:0.92rem;
+  }
+
+  /* ---------- FOCUS AREAS ---------- */
+  .focus-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+  .focus-card{
+    border:2px solid #2a2a2a;
+    padding:26px;
+  }
+  .focus-card.active{border-color:var(--yellow);}
+  .focus-card h3{
+    font-family:'Epilogue',sans-serif;
+    font-weight:800;
+    text-transform:none;
+    font-size:1.1rem;
+    color:var(--white);
+    margin-bottom:8px;
+  }
+  .focus-card .tag{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--black);
+    background:var(--green);
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:12px;
+  }
+  .focus-card p{color:var(--off-white);font-size:0.92rem;}
+  .certs{
+    margin-top:8px;
+    list-style:none;
+  }
+  .certs li{
+    font-size:0.92rem;
+    color:var(--off-white);
+    padding-left:18px;
+    position:relative;
+    margin-bottom:6px;
+  }
+  .certs li::before{
+    content:"-";
+    position:absolute;
+    left:0;
+    color:var(--green);
+  }
+
+  /* ---------- EDUCATION ---------- */
+  .edu-list{list-style:none;}
+  .edu-item{
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding:18px 0;
+    border-bottom:1px solid #1a1a1a;
+  }
+  .edu-item:last-child{border-bottom:none;}
+  .edu-school{
+    font-weight:800;
+    color:var(--white);
+    font-size:1.02rem;
+  }
+  .edu-degree{
+    color:var(--off-white);
+    font-size:0.9rem;
+  }
+  .edu-dates{
+    color:var(--yellow);
+    font-weight:700;
+    font-size:0.85rem;
+    white-space:nowrap;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:40px 0 60px;
+    text-align:center;
+  }
+  footer p{
+    color:#777;
+    font-size:0.82rem;
+  }
+  footer a{color:var(--pink);}
+
+  @media (min-width:768px){
+    .wrap{padding:0 40px;}
+    .focus-grid{grid-template-columns:1fr 1fr;}
+  }
+
+  @media (min-width:1440px){
+    .wrap{max-width:1200px;}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<header class="topnav">
+  <div class="wrap">
+    <span class="mark">JN</span>
+    <nav aria-label="Section navigation">
+      <a href="#about">About</a>
+      <a href="#skills">Skills</a>
+      <a href="#timeline">Timeline</a>
+      <a href="#focus">Focus</a>
+      <a href="#education">Education</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero wrap" style="border-bottom:2px solid var(--yellow);padding-left:24px;padding-right:24px;">
+    <div>
+      <div class="monogram" aria-hidden="true"><span>JN</span></div>
+      <p class="eyebrow">Singapore · Payments &amp; FX</p>
+      <h1>Judy Ni 倪嘉敏</h1>
+      <p class="oneliner">Payments &amp; FX relationship manager managing high-risk vertical clients across the EEA region.</p>
+      <div class="meta-row">
+        <span class="pill current">Key Account Manager, Rapyd</span>
+        <span class="pill">Based in Singapore</span>
+        <span class="pill">Professional Mandarin Speaker</span>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-solid" href="mailto:nichiaminjudy@gmail.com">Email Me</a>
+        <a class="btn btn-outline" href="https://www.linkedin.com/in/judyni" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="btn btn-outline" href="card.html">Save My Contact</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap">
+      <p class="section-label">About</p>
+      <h2 class="section-title">The Short Version</h2>
+      <div class="about-body">
+        <p>Judy is a relationship and business development professional with a deep specialization in <strong>payments, FX, and cross-border money movement</strong>. She currently manages strategic enterprise, high-risk vertical client merchants across the EEA region at Rapyd.</p>
+        <p>Her background spans enterprise account management, merchant acquiring, and international FX payments across some of the biggest names in payments and fintech - Worldpay, Rapyd, Wallex, and American Express. While leading Travel &amp; Airlines APAC at Worldpay, she handled airline clients across Hong Kong and Greater China, and is highly proficient in professional Mandarin - both in presentations and negotiations.</p>
+        <p>She's a strong communicator who builds trust quickly across internal and external stakeholders, and brings an unusual dual lens to the work - she originally trained as an <strong>architect</strong> (Master of Architecture, NUS), which shapes how she thinks about structure, client needs, and systems.</p>
+        <p>Outside of work, she's an avid builder - currently down a 3D printing rabbit hole - alongside pilates, pottery, and reading. She's also active in the SG Claude community, where she's building and exploring in the online space too.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap">
+      <p class="section-label">Skills</p>
+      <h2 class="section-title">What She's Good At</h2>
+      <div class="skills-grid">
+        <span class="skill-tag">Forex</span>
+        <span class="skill-tag">FX Swaps</span>
+        <span class="skill-tag">Cross-Border Payments</span>
+        <span class="skill-tag">Account Management</span>
+        <span class="skill-tag">Enterprise BD</span>
+        <span class="skill-tag">Merchant Acquiring</span>
+        <span class="skill-tag">Client Relations</span>
+        <span class="skill-tag">Stakeholder Management</span>
+        <span class="skill-tag">Data Analysis</span>
+        <span class="skill-tag">Travel &amp; Airlines</span>
+        <span class="skill-tag">CFD</span>
+        <span class="skill-tag">Gaming &amp; Sweepstakes</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="timeline">
+    <div class="wrap">
+      <p class="section-label">Work Timeline</p>
+      <h2 class="section-title">Career Journey</h2>
+
+      <div class="timeline">
+
+        <div class="tl-item current">
+          <p class="tl-dates">May 2024 - Present</p>
+          <h3 class="tl-role">Key Account Manager</h3>
+          <p class="tl-company">Rapyd</p>
+          <div class="tl-desc">
+            <p><strong style="color:var(--white)">Jul 2026 - Present:</strong> Managing high-risk vertical clients across the EEA region.</p>
+            <p><strong style="color:var(--white)">May 2024 - Jun 2025:</strong> Managed and grew key enterprise accounts across APAC in high-opportunity industries.</p>
+          </div>
+          <div class="tl-highlight">
+            <span class="tl-highlight-tag">Career Highlight</span>
+            <p class="tl-highlight-role">Relationship Manager, Travel &amp; Airlines APAC</p>
+            <p class="tl-highlight-company">Worldpay</p>
+            <p class="tl-highlight-dates">Jul 2025 - Jun 2026</p>
+            <p class="tl-highlight-desc">A defining stretch of her career - owning relationship management for travel and airline payment clients across APAC at one of the biggest names in global payments, before returning to Rapyd.</p>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <p class="tl-dates">Aug 2023 - May 2024</p>
+          <h3 class="tl-role">VP of Sales</h3>
+          <p class="tl-company">Wallex</p>
+        </div>
+
+        <div class="tl-item">
+          <p class="tl-dates">Jan 2019 - Aug 2023</p>
+          <h3 class="tl-role">Business Development Manager</h3>
+          <p class="tl-company">American Express</p>
+          <div class="tl-desc">
+            <p><strong style="color:var(--white)">Jan 2021 - Aug 2023:</strong> FX International Payments - structured foreign exchange and cross-border payment solutions for corporate clients.</p>
+            <p><strong style="color:var(--white)">Jan 2019 - Jan 2021:</strong> Merchant Acquisition - business development for new merchant accounts.</p>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <p class="tl-dates">Aug 2017 - 2019</p>
+          <h3 class="tl-role">Architectural Associate</h3>
+          <p class="tl-company">CPG Corporation</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="focus">
+    <div class="wrap">
+      <p class="section-label">Focus Areas</p>
+      <h2 class="section-title">What She's Building</h2>
+      <div class="focus-grid">
+
+        <div class="focus-card active">
+          <span class="tag">Current</span>
+          <h3>High-Risk Verticals, EEA - Rapyd</h3>
+          <p>Owns relationship management and growth for high-risk vertical clients across the EEA region.</p>
+        </div>
+
+        <div class="focus-card">
+          <span class="tag">2025–2026</span>
+          <h3>Travel &amp; Airlines APAC - Worldpay</h3>
+          <p>Owned relationship management for travel and airline payment clients across the region.</p>
+        </div>
+
+        <div class="focus-card">
+          <span class="tag">2024–2025</span>
+          <h3>Enterprise Account Growth - Rapyd</h3>
+          <p>Grew key accounts in high-opportunity APAC industries.</p>
+        </div>
+
+        <div class="focus-card">
+          <span class="tag">2021–2023</span>
+          <h3>FX International Payments - American Express</h3>
+          <p>Structured foreign exchange and cross-border payment solutions for corporate clients.</p>
+        </div>
+
+        <div class="focus-card" style="grid-column:1/-1;">
+          <span class="tag">Ongoing</span>
+          <h3>Continuous Learning</h3>
+          <p>Active interest in applying AI to payments and business development work. Certifications:</p>
+          <ul class="certs">
+            <li>Career Essentials in Generative AI (Microsoft &amp; LinkedIn)</li>
+            <li>Introduction to Prompt Engineering for Generative AI</li>
+            <li>Bank of America - Investment Banking Job Simulation</li>
+            <li>What Is Generative AI?</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="education" style="border-bottom:none;">
+    <div class="wrap">
+      <p class="section-label">Education</p>
+      <h2 class="section-title">Where She Trained</h2>
+      <ul class="edu-list">
+        <li class="edu-item">
+          <div>
+            <p class="edu-school">National University of Singapore</p>
+            <p class="edu-degree">Master of Architecture (M.Arch.), Architecture</p>
+          </div>
+          <p class="edu-dates">2011–2016</p>
+        </li>
+        <li class="edu-item">
+          <div>
+            <p class="edu-school">École Spéciale d'Architecture</p>
+            <p class="edu-degree">Exchange — Paris</p>
+          </div>
+          <p class="edu-dates">2014–2015</p>
+        </li>
+        <li class="edu-item">
+          <div>
+            <p class="edu-school">Tembusu College, NUS</p>
+          </div>
+          <p class="edu-dates">2011–2014</p>
+        </li>
+        <li class="edu-item">
+          <div>
+            <p class="edu-school">Tampines Junior College</p>
+          </div>
+          <p class="edu-dates"></p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Judy Ni · Singapore · <a href="mailto:nichiaminjudy@gmail.com">nichiaminjudy@gmail.com</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
