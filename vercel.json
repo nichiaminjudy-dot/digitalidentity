@@ -1,5 +1,12 @@
 {
   "rewrites": [
-    { "source": "/social", "destination": "/card.html" }
+    {
+      "source": "/social",
+      "destination": "/card.html"
+    },
+    {
+      "source": "/be-water",
+      "destination": "/be-water.html"
+    }
   ]
 }

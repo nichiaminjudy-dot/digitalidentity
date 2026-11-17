@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#11161f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Be Water – Flow Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#efe9dc; --dim:rgba(239,233,220,.55); --serif:"Cormorant Garamond", Georgia, "Times New Roman", serif; }
+  html, body { margin:0; height:100%; background:#11161f; overflow:hidden; color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent; overscroll-behavior:none; }
+  canvas#game { position:fixed; inset:0; width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; }
+  #stageCard { position:absolute; top:calc(env(safe-area-inset-top) + 16%); left:0; right:0; text-align:center;
+    opacity:0; transition:opacity 1.1s ease; font-family:var(--serif); text-shadow:0 1px 8px rgba(0,0,0,.35); }
+  #stageCard.show { opacity:1; }
+  #stageCard .num { font-size:13px; letter-spacing:.4em; opacity:.7; }
+  #stageCard .name { font-size:30px; margin-top:4px; letter-spacing:.06em; }
+  #stageCard .lesson { font-size:17px; font-style:italic; opacity:.75; margin-top:2px; }
+  #btns { position:absolute; top:calc(env(safe-area-inset-top) + 10px); right:calc(env(safe-area-inset-right) + 10px); display:flex; gap:8px; pointer-events:auto; }
+  #btns button { width:44px; height:44px; border-radius:22px; border:1px solid rgba(255,255,255,.18); background:rgba(10,14,20,.28);
+    color:var(--ink); font-size:17px; line-height:1; padding:0; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+  #btns button.off { opacity:.45; }
+  #chips { position:absolute; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 14px); display:flex; justify-content:center; gap:10px;
+    transition:opacity .6s; }
+  #chips.hide { opacity:0; }
+  .chip { pointer-events:auto; position:relative; min-width:70px; padding:9px 12px 11px; border-radius:22px; text-align:center;
+    font-size:13px; letter-spacing:.06em; color:var(--dim); background:rgba(10,14,20,.22); border:1px solid rgba(255,255,255,.10);
+    transition:color .3s, background .3s, border-color .3s; }
+  .chip.active { color:var(--ink); border-color:rgba(255,255,255,.35); background:rgba(10,14,20,.38); }
+  .chip .bar { position:absolute; left:14px; right:14px; bottom:5px; height:2px; border-radius:1px; background:currentColor; transform-origin:left center; transform:scaleX(0); opacity:.8; }
+  .chip.strain .bar { background:#e0a66a; }
+  .chip[data-f="water"].active { color:#8fe3ec; }
+  .chip[data-f="ice"].active { color:#e6f6ff; }
+  .chip[data-f="mist"].active { color:#cfc4ea; }
+
+  /* ---------- Overlays ---------- */
+  .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    padding:24px; box-sizing:border-box; opacity:0; pointer-events:none; transition:opacity 1.2s ease; }
+  .overlay.show { opacity:1; pointer-events:auto; }
+  #msg { position:fixed; left:0; right:0; top:34%; text-align:center; font-family:var(--serif); opacity:0; transition:opacity .5s; pointer-events:none;
+    text-shadow:0 0 3px rgba(0,0,0,.55), 0 1px 14px rgba(0,0,0,.6); padding:0 24px; }
+  #msg.show { opacity:1; }
+  #msg .cause { font-size:17px; font-style:italic; opacity:.75; }
+  #msg .again { font-size:24px; margin-top:6px; letter-spacing:.04em; }
+
+  #quote { background:radial-gradient(ellipse at center, rgba(12,16,22,.25), rgba(12,16,22,.6)); justify-content:flex-start; padding-top:calc(env(safe-area-inset-top) + 13vh); }
+  @media (orientation: landscape) { #quote { padding-top:6vh; } #quote .stats { margin-top:22px; } #quote .who { margin-top:12px; } }
+  #quote > * { opacity:0; transform:translateY(6px); transition:opacity 1.6s ease, transform 1.6s ease; }
+  #quote.show > * { opacity:1; transform:none; }
+  #quote .q { font-family:var(--serif); font-size:clamp(22px, 6vw, 34px); line-height:1.45; max-width:560px; font-weight:400; letter-spacing:.01em; transition-delay:.2s; }
+  #quote .who { font-family:var(--serif); font-style:italic; font-size:17px; margin-top:22px; opacity:.7; transition-delay:1.4s; }
+  #quote.show .who { opacity:.7; }
+  #quote .stats { font-size:12px; letter-spacing:.14em; margin-top:46px; color:var(--dim); text-transform:lowercase; transition-delay:2.2s; }
+  #quote .cont { font-size:12px; letter-spacing:.3em; margin-top:26px; color:var(--dim); transition-delay:3s; }
+  #quote.show .cont { animation:breathe 3.2s ease-in-out 3.2s infinite; }
+  @keyframes breathe { 0%,100% { opacity:.35 } 50% { opacity:.85 } }
+
+  #title { background:linear-gradient(180deg, rgba(12,16,24,.62) 0%, rgba(12,16,24,.15) 45%, rgba(12,16,24,.55) 100%); justify-content:space-between;
+    padding-top:calc(env(safe-area-inset-top) + 9vh); padding-bottom:calc(env(safe-area-inset-bottom) + 5vh); }
+  #title .t1 { font-family:var(--serif); font-size:clamp(46px, 14vw, 78px); letter-spacing:.04em; line-height:1; }
+  #title .t2 { font-size:12px; letter-spacing:.55em; margin-top:12px; opacity:.7; text-transform:uppercase; padding-left:.55em; }
+  #title .how { font-family:var(--serif); font-size:17px; line-height:1.7; opacity:.85; }
+  #title .how b { font-weight:500; color:#fff; }
+  #stageDots { display:flex; gap:10px; justify-content:center; margin:18px 0 6px; flex-wrap:wrap; }
+  #stageDots button { width:44px; height:44px; border-radius:22px; border:1px solid rgba(255,255,255,.3); background:rgba(10,14,20,.3); color:var(--ink);
+    font-family:var(--serif); font-size:18px; padding:0; }
+  #stageDots button.done { background:rgba(143,227,236,.18); border-color:rgba(143,227,236,.55); }
+  #stageDots button:disabled { opacity:.25; }
+  #title .begin { font-size:12px; letter-spacing:.35em; opacity:.6; animation:breathe 3.2s ease-in-out infinite; margin-top:10px; }
+
+  #end { background:radial-gradient(ellipse at center, rgba(236,230,216,.0), rgba(12,16,22,.55)); }
+  #end .e1 { font-family:var(--serif); font-size:clamp(26px, 7vw, 40px); line-height:1.35; max-width:520px; }
+  #end .e2 { font-family:var(--serif); font-style:italic; font-size:18px; margin-top:18px; opacity:.75; max-width:460px; line-height:1.5; }
+  #end .e3 { font-size:12px; letter-spacing:.14em; margin-top:34px; color:var(--dim); }
+  #end .cont { font-size:12px; letter-spacing:.3em; margin-top:26px; color:var(--dim); animation:breathe 3.2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div id="stageCard"><div class="num"></div><div class="name"></div><div class="lesson"></div></div>
+  <div id="btns"><button id="btnSound" aria-label="Sound">♪</button><button id="btnMenu" aria-label="Menu">☰</button></div>
+  <div id="chips" class="hide">
+    <div class="chip" data-f="water">↓ water<div class="bar"></div></div>
+    <div class="chip" data-f="ice">↔ ice<div class="bar"></div></div>
+    <div class="chip" data-f="mist">↑ mist<div class="bar"></div></div>
+  </div>
+</div>
+
+<div id="msg"><div class="cause"></div><div class="again">try again, more fluidly</div></div>
+
+<div id="quote" class="overlay">
+  <div class="q"></div>
+  <div class="who">— Bruce Lee</div>
+  <div class="stats"></div>
+  <div class="cont">touch to continue</div>
+</div>
+
+<div id="end" class="overlay">
+  <div class="e1">The forms were never the point.</div>
+  <div class="e2">You saw what was needed, became it, and let it go.<br>Nothing stuck.</div>
+  <div class="e3"></div>
+  <div class="cont">touch to return</div>
+</div>
+
+<div id="title" class="overlay show">
+  <div>
+    <div class="t1">Be Water</div>
+    <div class="t2">flow trainer</div>
+  </div>
+  <div>
+    <div class="how">
+      drag <b>← →</b> to flow<br>
+      flick <b>↓</b> water &nbsp;·&nbsp; <b>↔</b> ice &nbsp;·&nbsp; <b>↑</b> mist<br>
+      let go, and you return to water
+    </div>
+    <div id="stageDots"></div>
+    <div class="begin">touch to begin</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   BE WATER – FLOW TRAINER
+   A short adaptive flow game. One character, three temporary forms.
+   Water is home. Ice and Mist are borrowed, used, and released.
+
+   Sections:
+     1. Utilities & canvas setup
+     2. Tuning constants & the form table
+     3. Stage data (six hand-made lessons)
+     4. Themes (backgrounds, palettes)
+     5. Audio (tiny WebAudio synth)
+     6. Input (drag to move, flick to pour)
+     7. Form system (pour, hold, strain, settle back to water)
+     8. Obstacles (geometry over time) & collision
+     9. Player update, passage / near-miss feedback, fail & clear
+    10. Rendering (world, character, particles, text)
+    11. UI flow (title, stage card, quote, end) & main loop
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. UTILITIES & CANVAS
+   --------------------------------------------------------------------- */
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t * t * (3 - 2 * t);
+const damp = (a, b, rate, dt) => a + (b - a) * (1 - Math.exp(-rate * dt));
+const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const vnoise = (x, seed) => { const i = Math.floor(x), f = x - i; return lerp(hash(i + seed * 57.3), hash(i + 1 + seed * 57.3), ease(f)); };
+const rnd = (a, b) => a + Math.random() * (b - a);
+const $ = s => document.querySelector(s);
+
+const canvas = $('#game');
+const ctx = canvas.getContext('2d');
+// The world is drawn into a small low-resolution buffer (true pixel art),
+// then scaled up with nearest-neighbour sampling.
+const buf = document.createElement('canvas');
+const b = buf.getContext('2d');
+
+let DPR = 1, SCALE = 1, VW = 240, VH = 400, GY = 240; // GY = screen row of the ground line (world y = 0)
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  const cw = window.innerWidth, ch = window.innerHeight;
+  canvas.width = Math.round(cw * DPR);
+  canvas.height = Math.round(ch * DPR);
+  // Aim for ~190 logical px across in portrait and ~160 tall in landscape.
+  SCALE = Math.max(1, Math.min(cw / 190, ch / 160)) * DPR;
+  VW = Math.ceil(canvas.width / SCALE);
+  VH = Math.ceil(canvas.height / SCALE);
+  buf.width = VW; buf.height = VH;
+  GY = Math.round(VH * (VH > VW ? 0.6 : 0.74));
+  b.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------------------------------------------------------------------
+   2. TUNING & FORMS
+   Every form is a temporary answer to a situation.
+   w/h      : hitbox (feet at the bottom). Water is low and long, so it fits cracks.
+   speed    : top horizontal speed.   accel : how quickly it reaches it.
+   windK    : how strongly gusts move it (Ice barely moves; Mist is scattered).
+   --------------------------------------------------------------------- */
+const FORMS = {
+  water: { w: 26, h: 14, speed: 92, accel: 9,   windK: 1.15, color: '#5fcbd6', trail: 'rgba(110,210,222,' },
+  ice:   { w: 20, h: 24, speed: 54, accel: 5,   windK: 0.05, color: '#e4f6ff', trail: 'rgba(225,244,255,' },
+  mist:  { w: 20, h: 22, speed: 70, accel: 3.2, windK: 3.0,  color: '#bdb2d8', trail: 'rgba(196,186,226,' },
+};
+const GRAVITY       = 520;
+const MIST_HOVER    = 12;    // mist floats this far above the ground
+const MIST_SINK     = 10;    // px/s mist sinks when nothing is beneath it
+const GUST_SPEED    = 110;
+const PRESS_UP      = 46;    // how high a press rests (world px above ground)
+const POUR_TIME     = 0.22;  // the brief "commitment" of a change
+const POUR_COOLDOWN = 0.32;  // prevents mindless spamming
+const HOLD_DECAY_TOUCH   = 0.05; // per second, while a finger rests on the screen
+const HOLD_DECAY_RELEASE = 1.3;  // per second, once the finger lifts -> soft return to water
+const STRAIN_START  = 4.0;   // seconds in Ice/Mist before the form starts to feel wrong
+const STRAIN_SPAN   = 2.5;   // ...and how long until it lets go on its own
+
+/* ---------------------------------------------------------------------
+   3. STAGES
+   Obstacle shorthands (x positions in world pixels):
+     S sign        L low crack (only Water fits)   V veil (only Mist passes)
+     G gust (Ice holds; Water is pushed; Mist scatters)
+     P press (falls in rhythm; Ice holds it up)   T gate (opens, narrows, closes)
+     H hole (only Mist drifts across)
+   --------------------------------------------------------------------- */
+const S = (x, text) => ({ type: 'sign', x, w: 0, text });
+const L = (x, w, clear = 18) => ({ type: 'low', x, w, clear });
+const V = (x, w = 14) => ({ type: 'veil', x, w });
+const G = (x, w, power = 1) => ({ type: 'gust', x, w, power });
+const P = (x, period, offset = 0, w = 30) => ({ type: 'press', x, w, period, offset });
+const T = (x, period, offset = 0, w = 24) => ({ type: 'gate', x, w, period, offset });
+const H = (x, w) => ({ type: 'pit', x, w });
+
+const STAGES = [
+  { name: 'Rain Alley', lesson: 'yield', theme: 'alley', end: 1480,
+    quote: 'Empty your mind. Be formless, shapeless, like water.',
+    obs: [ S(70, 'drag to flow'), L(200, 60), S(300, 'water already fits'), L(370, 40),
+           S(450, 'flick up — release your form'), V(560), S(610, 'let go. you return to water.'),
+           L(690, 80), V(890), L(935, 50), L(1090, 30), V(1190), L(1240, 100) ] },
+
+  { name: 'Bamboo Grove', lesson: 'release', theme: 'bamboo', end: 1580,
+    quote: 'You put water into a cup, it becomes the cup. You put water into a bottle, it becomes the bottle.',
+    obs: [ S(70, 'mist drifts over what cannot hold you'), H(240, 50), L(360, 60), H(500, 64), V(640),
+           L(720, 60), H(900, 56), L(990, 40), V(1120), H(1160, 56), V(1262), L(1330, 80) ] },
+
+  { name: 'Dojo Corridor', lesson: 'hold, briefly', theme: 'dojo', end: 1480,
+    quote: 'Pliability is life. Rigidity is death.',
+    obs: [ S(70, 'flick sideways — stand firm, briefly'), G(220, 110), L(400, 50), G(540, 100),
+           S(650, 'mist cannot stand in the wind'), V(720), L(790, 40), G(930, 100), L(1080, 36), G(1140, 100), V(1330) ] },
+
+  { name: 'Stone Courtyard', lesson: 'read the rhythm', theme: 'court', end: 1450,
+    quote: 'Be like water making its way through cracks. Do not be assertive, but adjust to the object, and you shall find a way around or through it.',
+    obs: [ S(70, 'read the rhythm — or hold, briefly'), P(230, 2.6, 0), P(370, 2.6, 1.3), L(470, 40),
+           P(600, 2.2, 0), P(636, 2.2, 0.25), G(760, 100), P(930, 2.4, 0.6), V(1010),
+           P(1100, 2.4, 0), P(1180, 2.4, 1.2), L(1250, 40) ] },
+
+  { name: 'Mountain Gates', lesson: 'the moment changes', theme: 'mount', end: 1350,
+    quote: 'Using no way as way, having no limitation as limitation.',
+    obs: [ S(70, 'the gap is changing. read it.'), T(220, 3, 0), T(360, 3, 1.0), H(460, 60), T(590, 2.8, 0, 30),
+           G(690, 90), T(840, 3, 0), T(880, 3, 1.5), V(990), L(1040, 40), T(1160, 2.6, 0.5, 36) ] },
+
+  { name: 'Ink Wash', lesson: 'no way as way', theme: 'ink', end: 1640,
+    quote: 'Now, water can flow, or it can crash. Be water, my friend.',
+    obs: [ L(160, 40), V(260), L(300, 40), G(410, 100), H(580, 56), V(668), P(780, 2.4, 0.4), T(880, 3, 0.8),
+           L(980, 50), G(1090, 90), P(1230, 2.2, 0.9), V(1310), H(1350, 50), L(1450, 70) ] },
+];
+
+/* ---------------------------------------------------------------------
+   4. THEMES – muted so the character stays the focus
+   --------------------------------------------------------------------- */
+const THEMES = {
+  alley: { sky: ['#141b27', '#2b3648'], ground: '#1b2028', groundTop: '#3c4859', solid: '#2f3541', solidLo: '#262b35', solidHi: '#55607a',
+           veil: '#d8c7a0', veilMark: '#8a3a34', wind: 'rgba(170,190,215,', text: 'rgba(225,232,240,.78)', pit: '#07090d', weather: 'rain', pool: '#3d6f86' },
+  bamboo:{ sky: ['#dfe7d6', '#b0c3a6'], ground: '#4b5c3e', groundTop: '#7b9562', solid: '#46573b', solidLo: '#3c4b33', solidHi: '#7f9a68',
+           veil: '#f3f0e3', veilMark: '#4a5a40', wind: 'rgba(90,110,80,', text: 'rgba(48,60,40,.8)', pit: '#1c2417', weather: 'leaves', pool: '#79a7a3' },
+  dojo:  { sky: ['#5b4332', '#4a3527'], ground: '#5e4330', groundTop: '#8e6c4d', solid: '#3c2a1e', solidLo: '#32231a', solidHi: '#76563c',
+           veil: '#2f4a6d', veilMark: '#e9e0cc', wind: 'rgba(240,225,200,', text: 'rgba(244,234,214,.8)', pit: '#140d08', weather: 'dust', pool: '#4f7d8c' },
+  court: { sky: ['#2d2a3e', '#8e6e6e'], ground: '#3a3642', groundTop: '#6f6779', solid: '#5a5466', solidLo: '#4c4757', solidHi: '#8b8398',
+           veil: '#cfc6b6', veilMark: '#6b3a3a', wind: 'rgba(230,215,215,', text: 'rgba(240,228,222,.8)', pit: '#0e0c12', weather: 'fireflies', pool: '#5a7b8e' },
+  mount: { sky: ['#e3e6e6', '#b4bfc4'], ground: '#4a5459', groundTop: '#818e94', solid: '#3c4549', solidLo: '#333b3f', solidHi: '#6b7980',
+           veil: '#f6f6f2', veilMark: '#58646a', wind: 'rgba(70,85,95,', text: 'rgba(40,50,56,.78)', pit: '#161b1e', weather: 'mist', pool: '#7aa1ad' },
+  ink:   { sky: ['#efe9dc', '#e2dac8'], ground: '#2b2a28', groundTop: '#4c4a45', solid: '#2b2a28', solidLo: '#242321', solidHi: '#5a5853',
+           veil: '#ffffff', veilMark: '#2b2a28', wind: 'rgba(40,40,38,', text: 'rgba(43,42,40,.82)', pit: '#141412', weather: 'none', pool: '#6f9aa5' },
+};
+
+/* ---------------------------------------------------------------------
+   5. AUDIO – soft, optional, synthesised (no files)
+   --------------------------------------------------------------------- */
+const PENTA = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0];
+const Snd = {
+  ac: null, master: null, on: true,
+  init() {
+    if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
+    try {
+      this.ac = new (window.AudioContext || window.webkitAudioContext)();
+      this.master = this.ac.createGain(); this.master.gain.value = 0.45; this.master.connect(this.ac.destination);
+    } catch (e) { this.ac = null; }
+  },
+  tone(freq, dur, { type = 'sine', vol = 0.12, slide = null, delay = 0, attack = 0.01 } = {}) {
+    if (!this.ac || !this.on) return;
+    const t0 = this.ac.currentTime + delay, o = this.ac.createOscillator(), g = this.ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(this.master); o.start(t0); o.stop(t0 + dur + 0.05);
+  },
+  noise(dur, { vol = 0.08, freq = 800, to = null, q = 1, delay = 0 } = {}) {
+    if (!this.ac || !this.on) return;
+    const t0 = this.ac.currentTime + delay, len = Math.ceil(this.ac.sampleRate * dur);
+    const nb = this.ac.createBuffer(1, len, this.ac.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = this.ac.createBufferSource(); src.buffer = nb;
+    const f = this.ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q; f.frequency.setValueAtTime(freq, t0);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    const g = this.ac.createGain(); g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + dur * 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(this.master); src.start(t0); src.stop(t0 + dur + 0.05);
+  },
+  pour(form) {
+    if (form === 'water') { this.tone(520, 0.28, { slide: 300, vol: 0.09 }); this.noise(0.25, { vol: 0.03, freq: 1400, to: 500 }); }
+    if (form === 'ice')   { this.tone(1046, 0.35, { type: 'triangle', vol: 0.06 }); this.tone(1568, 0.25, { vol: 0.035, delay: 0.03 }); }
+    if (form === 'mist')  { this.noise(0.5, { vol: 0.06, freq: 500, to: 2400, q: 0.7 }); this.tone(392, 0.45, { slide: 784, vol: 0.035, attack: 0.12 }); }
+  },
+  pass()     { this.tone(PENTA[(Math.random() * 6 | 0) + 2], 0.6, { vol: 0.045, attack: 0.02 }); },
+  near()     { this.tone(659.3, 0.7, { vol: 0.06 }); this.tone(987.8, 0.9, { vol: 0.045, delay: 0.09 }); },
+  fizzle()   { this.noise(0.12, { vol: 0.04, freq: 2600, q: 3 }); },
+  bump()     { this.tone(150, 0.14, { vol: 0.05, slide: 110 }); },
+  strain()   { this.noise(0.4, { vol: 0.03, freq: 300, to: 180, q: 4 }); },
+  fail()     { this.tone(330, 0.9, { slide: 165, vol: 0.07, attack: 0.05 }); this.noise(0.6, { vol: 0.03, freq: 900, to: 200 }); },
+  clear()    { [0, 2, 4, 5, 7].forEach((n, i) => this.tone(PENTA[n], 2.2, { vol: 0.05, delay: i * 0.22, attack: 0.08 })); },
+};
+
+/* ---------------------------------------------------------------------
+   6. INPUT
+   Drag anywhere = floating joystick for left/right.
+   Quick flick   = pour into a form:  down Water · sideways Ice · up Mist.
+   Keyboard (desktop testing): ← → move, ↑/W mist, ↓/S water, Space/E ice.
+   --------------------------------------------------------------------- */
+const Input = { move: 0, pid: null, ax: 0, cx: 0, samples: [], lastFlick: 0, keys: {},
+  get touching() { return this.pid !== null || Object.keys(this.keys).some(k => this.keys[k]); } };
+
+function onPointerDown(e) {
+  Snd.init();
+  if (e.target.closest && e.target.closest('button, .chip')) return;
+  if (state !== 'play') { handleTap(); return; }
+  if (Input.pid !== null) return;
+  Input.pid = e.pointerId;
+  Input.ax = Input.cx = e.clientX;
+  Input.samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
+}
+function onPointerMove(e) {
+  if (e.pointerId !== Input.pid) return;
+  const now = e.timeStamp, x = e.clientX, y = e.clientY;
+  Input.samples.push({ x, y, t: now });
+  while (Input.samples.length > 2 && now - Input.samples[0].t > 150) Input.samples.shift();
+  const s0 = Input.samples[0], dx = x - s0.x, dy = y - s0.y, dt = Math.max(1, now - s0.t);
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if (now - Input.lastFlick > 220) {
+    let form = null;
+    if (ady > 34 && ady > adx * 1.2 && ady / dt > 0.35) form = dy < 0 ? 'mist' : 'water';
+    else if (adx > 56 && adx > ady * 1.6 && adx / dt > 0.75) form = 'ice';
+    if (form) {
+      Input.lastFlick = now;
+      Input.samples = [{ x, y, t: now }];
+      // A sideways flick keeps a gentle drift in the flick direction.
+      if (form === 'ice') Input.ax = x - Math.sign(dx) * 22;
+      pour(form);
+    }
+  }
+  Input.cx = x;
+  // floating anchor: never more than 60px behind the finger
+  const off = Input.cx - Input.ax;
+  if (Math.abs(off) > 60) Input.ax = Input.cx - Math.sign(off) * 60;
+}
+function onPointerUp(e) {
+  if (e.pointerId !== Input.pid) return;
+  Input.pid = null; Input.samples = [];
+}
+window.addEventListener('pointerdown', onPointerDown, { passive: true });
+window.addEventListener('pointermove', onPointerMove, { passive: true });
+window.addEventListener('pointerup', onPointerUp);
+window.addEventListener('pointercancel', onPointerUp);
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+
+function readMove() {
+  let m = 0;
+  if (Input.pid !== null) {
+    const off = Input.cx - Input.ax;
+    m = Math.abs(off) < 6 ? 0 : clamp((off - Math.sign(off) * 6) / 40, -1, 1);
+  }
+  if (Input.keys.right) m += 1;
+  if (Input.keys.left) m -= 1;
+  return clamp(m, -1, 1);
+}
+
+const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' };
+window.addEventListener('keydown', e => {
+  Snd.init();
+  if (e.repeat) return;
+  if (state !== 'play') { if (e.key === 'Enter' || e.key === ' ') handleTap(); return; }
+  if (KEYMAP[e.key]) Input.keys[KEYMAP[e.key]] = true;
+  else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { Input.keys.hold = true; pour('mist'); }
+  else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pour('water');
+  else if (e.key === ' ' || e.key === 'e' || e.key === 'E' || e.key === 'Shift') { Input.keys.hold = true; pour('ice'); }
+  if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault();
+});
+window.addEventListener('keyup', e => {
+  if (KEYMAP[e.key]) Input.keys[KEYMAP[e.key]] = false;
+  if (['ArrowUp', 'w', 'W', ' ', 'e', 'E', 'Shift'].includes(e.key)) Input.keys.hold = false;
+});
+
+/* ---------------------------------------------------------------------
+   GAME STATE
+   --------------------------------------------------------------------- */
+let state = 'title';        // title | play | fail | clear | quote | end
+let stageIdx = 0, stage = STAGES[0], theme = THEMES.alley, obs = [];
+let st = 0;                 // stage time (world-scaled), drives presses and gates deterministically
+let worldT = 0, camX = 0, timeScale = 1;
+let pulse = 0, wash = 0, failT = 0, clearT = 0, quoteShown = false, failCause = '';
+let p = null;               // the player
+const run = { formTime: 0, pours: 0 };
+const parts = [];
+const weather = [];
+
+/* Save data (per-viewer convenience only) */
+const save = (() => {
+  let d = { unlocked: 1, best: [], cleared: [], sound: true };
+  try { const raw = localStorage.getItem('bewater.v1'); if (raw) d = Object.assign(d, JSON.parse(raw)); } catch (e) {}
+  return { d, write() { try { localStorage.setItem('bewater.v1', JSON.stringify(d)); } catch (e) {} } };
+})();
+Snd.on = save.d.sound !== false;
+
+function newPlayer() {
+  return { x: 40, y: 0, vx: 0, vy: 0, windV: 0, facing: 1,
+    form: 'water', prev: 'water', morph: 1,      // morph 0→1 blends prev → form
+    cooldown: 0, pourT: 0, age: 0, hold: 1, strain: 0, strainWarned: false,
+    dead: false, deathT: 0, deathType: '', calm: false, calmT: 0,
+    gustT: 0, fizzT: 0, trailT: 0, glow: 0, bumpT: 0, squash: 0 };
+}
+
+/* ---------------------------------------------------------------------
+   7. FORM SYSTEM
+   pour(form)   : the only way to change. Costs a short commitment.
+   hold         : 1 after pouring. Drains slowly while a finger rests on the
+                  screen, quickly once it lifts → the soft pull back to Water.
+   strain       : after STRAIN_START seconds in Ice/Mist the form starts to
+                  feel wrong (slower, jittery, thinning) and finally lets go.
+   --------------------------------------------------------------------- */
+function boxOf(form, x, y) {
+  const f = FORMS[form];
+  return { l: x - f.w / 2 + 2, r: x + f.w / 2 - 2, t: y - f.h, b: y }; // 2px forgiveness on each side
+}
+
+function fits(form, x, y) {
+  const bx = boxOf(form, x, y);
+  for (const o of obs) {
+    const s = solidOf(o);
+    if (s && blocks(o, form) && overlaps(bx, s)) return false;
+  }
+  return true;
+}
+
+function pour(form, forced = false) {
+  if (!p || p.dead || (state !== 'play' && !forced)) return;
+  if (form === p.form) {               // re-affirming a form refreshes its hold (not its age)
+    if (form !== 'water') p.hold = 1;
+    return;
+  }
+  if (!forced && p.cooldown > 0) return;
+  if (!forced && !fits(form, p.x, p.y)) {   // the situation does not allow it: a soft fizzle
+    p.fizzT = 0.25; Snd.fizzle();
+    emit(5, { x: p.x, y: p.y - 8, type: FORMS[form] === FORMS.ice ? 'crystal' : 'drop', color: FORMS[form].color, sp: 30, life: 0.35 });
+    return;
+  }
+  p.prev = p.form; p.form = form; p.morph = 0;
+  p.cooldown = POUR_COOLDOWN; p.pourT = POUR_TIME; p.age = 0; p.hold = 1; p.strain = 0; p.strainWarned = false;
+  if (!forced) run.pours++;
+  if (form === 'mist') p.vy = -30;
+  Snd.pour(form);
+  const cy = p.y - 8;
+  if (form === 'water') emit(12, { x: p.x, y: cy, type: 'drop', color: '#7fd8e2', sp: 55, up: 50, g: 260, life: 0.6 });
+  if (form === 'ice')   emit(10, { x: p.x, y: cy - 4, type: 'crystal', color: '#f2fbff', sp: 45, up: 30, g: 120, life: 0.7 });
+  if (form === 'mist')  emit(12, { x: p.x, y: cy - 4, type: 'mist', color: '#cbc2e2', sp: 22, up: 18, life: 1.0 });
+}
+
+function updateForm(dt) {
+  if (p.cooldown > 0) p.cooldown -= dt;
+  if (p.pourT > 0) p.pourT -= dt;
+  p.morph = Math.min(1, p.morph + dt / POUR_TIME);
+  if (p.form === 'water') { p.strain = damp(p.strain, 0, 6, dt); return; }
+
+  p.age += dt;
+  run.formTime += dt;
+  p.hold -= (Input.touching ? HOLD_DECAY_TOUCH : HOLD_DECAY_RELEASE) * dt;
+  p.strain = clamp((p.age - STRAIN_START) / STRAIN_SPAN, 0, 1);
+  if (p.strain > 0 && !p.strainWarned) { p.strainWarned = true; Snd.strain(); }
+  if (p.strain > 0 && Math.random() < p.strain * dt * 14) {
+    emit(1, { x: p.x + rnd(-8, 8), y: p.y - rnd(4, 20), type: p.form === 'ice' ? 'crystal' : 'mist', color: FORMS[p.form].color, sp: 12, life: 0.6 });
+  }
+  if (p.hold <= 0 || p.strain >= 1) pour('water', true);  // settle home
+}
+
+/* ---------------------------------------------------------------------
+   8. OBSTACLES & COLLISION
+   Every solid is a rectangle hanging from the sky down to world-y `b`
+   (0 = ground; negative = above ground). The player's box overlaps it if
+   their top pokes above that bottom edge while horizontally inside.
+   --------------------------------------------------------------------- */
+function pressState(o, time) {
+  const per = o.period; let t = ((time + o.offset) % per + per) % per;
+  const wait = per - 1.9;
+  if (t < wait) return { b: -PRESS_UP, ph: 'up' };            t -= wait;
+  if (t < 0.5)  return { b: -PRESS_UP, ph: 'shake' };         t -= 0.5;
+  if (t < 0.15) return { b: lerp(-PRESS_UP, 0, (t / 0.15) ** 2), ph: 'slam' }; t -= 0.15;
+  if (t < 0.55) return { b: 0, ph: 'down' };                  t -= 0.55;
+  return { b: lerp(0, -PRESS_UP, ease(clamp(t / 0.7, 0, 1))), ph: 'rise' };
+}
+
+function gateClear(o, time) {
+  const per = o.period, u = (((time + o.offset) % per) + per) % per / per, OPEN = 60, NAR = 18;
+  if (u < 0.40) return OPEN;
+  if (u < 0.48) return lerp(OPEN, NAR, ease((u - 0.40) / 0.08));
+  if (u < 0.70) return NAR;
+  if (u < 0.76) return lerp(NAR, 0, (u - 0.70) / 0.06);
+  if (u < 0.88) return 0;
+  return lerp(0, OPEN, ease((u - 0.88) / 0.12));
+}
+
+function solidOf(o) {
+  switch (o.type) {
+    case 'low':   return { l: o.x, r: o.x + o.w, b: -o.clear };
+    case 'veil':  return { l: o.x, r: o.x + o.w, b: 10 };
+    case 'press': return { l: o.x, r: o.x + o.w, b: o.bottom };
+    case 'gate':  return { l: o.x, r: o.x + o.w, b: -o.clear };
+  }
+  return null;
+}
+const blocks = (o, form) => !(o.type === 'veil' && form === 'mist');
+const overlaps = (bx, s) => bx.l < s.r && bx.r > s.l && bx.t < s.b - 0.5;
+const hOverlap = (bx, o) => Math.min(bx.r, o.x + o.w) - Math.max(bx.l, o.x);
+
+function pitAt(x) { for (const o of obs) if (o.type === 'pit' && x > o.x + 3 && x < o.x + o.w - 3) return o; return null; }
+function gustAt(x) { for (const o of obs) if (o.type === 'gust' && x > o.x && x < o.x + o.w) return o; return null; }
+
+/* Moving obstacles update their geometry, then react to the player inside them. */
+function updateObstacles(dt) {
+  const bx = p.dead ? null : boxOf(p.form, p.x, p.y);
+  for (const o of obs) {
+    if (o.watch > 0) o.watch -= dt;
+    if (o.type === 'press') {
+      const ps = pressState(o, st);
+      if (ps.ph === 'slam' && o.phase !== 'slam' && o.watch > 0) nearMiss(o);
+      if (ps.ph === 'down' && o.phase === 'slam') {             // landing dust
+        emit(8, { x: o.x + o.w / 2, y: -1, type: 'dust', color: theme.groundTop, sp: 40, up: 10, life: 0.6, spread: o.w });
+      }
+      o.phase = ps.ph;
+      o.prevBottom = o.bottom;
+      let bottom = ps.b;
+      if (bx && hOverlap(bx, o) > 3) {
+        if (p.form === 'ice') {
+          // Ice holds the weight for a moment.
+          if (bottom > bx.t) { bottom = bx.t; if (!o.held) { o.held = true; p.squash = 1; Snd.bump(); emit(6, { x: p.x, y: bx.t, type: 'crystal', color: '#f2fbff', sp: 40, life: 0.5 }); } }
+          else o.held = false;
+        } else if (bottom > bx.t + 1 && o.prevBottom <= bx.t + 1) {
+          // Forgiving: only an edge was caught -> slip out sideways (a near-miss, not a failure).
+          if (hOverlap(bx, o) <= 7) { nudgeOut(o); nearMiss(o); }
+          else { o.bottom = bottom; fail('press'); continue; }
+        }
+      } else o.held = false;
+      o.bottom = bottom;
+    }
+    if (o.type === 'gate') {
+      const prevClear = o.clear;
+      o.clear = gateClear(o, st);
+      if (o.watch > 0 && prevClear >= 14 && o.clear < 14) nearMiss(o);
+      if (bx && hOverlap(bx, o) > 2 && bx.t < -o.clear - 0.5) {
+        // The gap closes around you: yield if you can, otherwise you are caught.
+        if (p.form !== 'water' && o.clear >= FORMS.water.h) { pour('water', true); emit(6, { x: p.x, y: p.y - 6, type: 'drop', color: '#7fd8e2', sp: 40, life: 0.5 }); }
+        else if (o.clear < FORMS.water.h) {
+          if (hOverlap(bx, o) <= 7) { nudgeOut(o); nearMiss(o); }   // only an edge was caught
+          else fail('gate');
+        }
+      }
+    }
+    if (o.type === 'veil' && bx && p.form !== 'mist' && hOverlap(bx, o) > 0) {
+      // Mist faded while inside the veil: the veil gently returns you to the nearer side.
+      nudgeOut(o);
+      o.ripple = 1;
+      emit(6, { x: o.x + o.w / 2, y: -14, type: 'mist', color: theme.veil, sp: 20, life: 0.6 });
+    }
+    if (o.ripple) o.ripple = Math.max(0, o.ripple - dt * 1.5);
+  }
+}
+
+/* Push the player out of an obstacle to whichever side is nearer. */
+function nudgeOut(o) {
+  const half = FORMS[p.form].w / 2 - 2;
+  const left = o.x - half - 0.5, right = o.x + o.w + half + 0.5;
+  p.x = (p.x - left < right - p.x) ? left : right;
+  p.vx = 0;
+}
+
+/* Horizontal motion with soft walls. */
+function moveX(dx) {
+  const f = FORMS[p.form], half = f.w / 2 - 2;
+  let nx = p.x + dx;
+  const before = boxOf(p.form, p.x, p.y);
+  for (const o of obs) {
+    const s = solidOf(o);
+    if (!s || !blocks(o, p.form)) continue;
+    const bx = boxOf(p.form, nx, p.y);
+    if (!overlaps(bx, s)) continue;
+    if (before.l < s.r && before.r > s.l) continue;      // already inside: handled by obstacle rules
+    nx = dx > 0 ? s.l - half - 0.01 : s.r + half + 0.01;
+    if (Math.abs(p.vx) > 25 && p.bumpT <= 0) {
+      p.bumpT = 0.45; p.squash = 0.6; Snd.bump();
+      emit(4, { x: dx > 0 ? s.l : s.r, y: p.y - 6, type: p.form === 'ice' ? 'crystal' : 'drop', color: f.color, sp: 25, life: 0.4 });
+    }
+    p.vx *= -0.15;
+  }
+  // If below ground level we are inside a pit: its walls hold us.
+  if (p.y > 3) {
+    for (const o of obs) if (o.type === 'pit' && p.x > o.x - 2 && p.x < o.x + o.w + 2) nx = clamp(nx, o.x + 3.5, o.x + o.w - 3.5);
+  }
+  p.x = clamp(nx, 10, stage.end + 40);
+}
+
+/* ---------------------------------------------------------------------
+   9. PLAYER UPDATE, FEEDBACK, FAIL & CLEAR
+   --------------------------------------------------------------------- */
+function updatePlayer(dt) {
+  const f = FORMS[p.form];
+  if (p.bumpT > 0) p.bumpT -= dt;
+  if (p.fizzT > 0) p.fizzT -= dt;
+  p.squash = damp(p.squash, 0, 7, dt);
+  p.glow = Math.max(0, p.glow - dt);
+
+  // --- horizontal: guide the current, don't steer a rigid body
+  let input = state === 'play' ? readMove() : 0;
+  let maxV = f.speed * (1 - 0.55 * p.strain) * (p.pourT > 0 ? 0.55 : 1);
+  if (obs.some(o => o.type === 'press' && o.held)) maxV *= 0.6;
+  let target = input * maxV;
+  if (state === 'clear') target = clamp((stage.end + 22 - p.x) * 2, -30, 30);
+  p.vx = damp(p.vx, target, f.accel, dt);
+  if (Math.abs(p.vx) > 6) p.facing = Math.sign(p.vx);
+
+  const gust = gustAt(p.x);
+  const wind = gust ? -GUST_SPEED * gust.power * f.windK : 0;
+  p.windV = damp(p.windV, wind, 5, dt);
+  // Mist has no weight to stand against force: exposure accumulates and it scatters.
+  const nearGust = obs.find(o => o.type === 'gust' && p.x > o.x - 14 && p.x < o.x + o.w);
+  if (nearGust && p.form === 'mist' && state === 'play') {
+    p.gustT += dt;
+    if (Math.random() < dt * 30) emit(1, { x: p.x + rnd(-6, 6), y: p.y - rnd(4, 18), type: 'mist', color: '#cbc2e2', sp: 40, life: 0.5 });
+    if (p.gustT > 0.3) { fail('scatter'); return; }
+  } else p.gustT = Math.max(0, p.gustT - dt * 0.5);
+
+  moveX((p.vx + p.windV) * dt);
+
+  // --- vertical: gentle gravity; mist hovers, and sinks over emptiness
+  const pit = pitAt(p.x);
+  if (p.form === 'mist') {
+    if (!pit && p.y <= 3) p.vy = damp(p.vy, (-MIST_HOVER - p.y) * 5, 10, dt);
+    else p.vy = MIST_SINK;
+    p.y += p.vy * dt;
+  } else {
+    const prevY = p.y;
+    p.vy += GRAVITY * dt; p.y += p.vy * dt;
+    if (!pit && p.y >= 0 && prevY <= 0.5) {
+      if (p.vy > 120) { p.squash = 0.8; emit(4, { x: p.x, y: -1, type: 'drop', color: f.color, sp: 30, up: 20, g: 200, life: 0.4 }); }
+      p.y = 0; p.vy = 0;
+    }
+  }
+  if (p.y > 70 && state === 'play') { fail('fall'); return; }
+
+  // --- trail: a living current leaves a little of itself behind
+  p.trailT -= dt;
+  if (Math.abs(p.vx + p.windV) > 30 && p.trailT <= 0) {
+    p.trailT = p.glow > 0 ? 0.03 : 0.07;
+    emit(1, { x: p.x - p.facing * 8, y: p.y - (p.form === 'water' ? 4 : 10), type: 'trail', color: f.trail, sp: 2, life: p.glow > 0 ? 0.8 : 0.45, size: p.glow > 0 ? 2 : 1 });
+  }
+
+  updateForm(dt);
+}
+
+/* Clean passage and near-miss detection: soft, warm acknowledgement. */
+function checkPassage() {
+  const bx = boxOf(p.form, p.x, p.y);
+  for (const o of obs) {
+    if (o.passed || o.type === 'sign') continue;
+    if (bx.l > o.x + o.w) {
+      o.passed = true; o.watch = 0.6;
+      pulse = Math.max(pulse, 0.35); p.glow = Math.max(p.glow, 0.6);
+      Snd.pass();
+      emit(6, { x: o.x + o.w, y: p.y - 8, type: 'spark', color: 'rgba(255,255,255,', sp: 0, life: 0.6 });
+      if (o.type === 'gate' && o.clear < 30) nearMiss(o);
+      if (o.type === 'pit' && p.form === 'mist' && p.y > -6) nearMiss(o);
+      if (o.type === 'press' && (o.phase === 'shake' || o.phase === 'slam')) nearMiss(o);
+    }
+  }
+}
+function nearMiss(o) {
+  if (o.nearDone) return;
+  o.nearDone = true;
+  pulse = 1; p.glow = 1.4; Snd.near();
+  emit(1, { x: p.x, y: p.y - 9, type: 'spark', color: 'rgba(255,255,255,', sp: 0, life: 0.9, size: 3 });
+  emit(10, { x: p.x, y: p.y - 9, type: p.form === 'ice' ? 'crystal' : p.form === 'mist' ? 'mist' : 'drop', color: FORMS[p.form].color, sp: 50, up: 20, g: 60, life: 0.8 });
+}
+
+const FAIL_TEXT = {
+  fall:    'nothing could hold you there',
+  press:   'the weight needed a moment of structure',
+  gate:    'the gap closed around you',
+  scatter: 'mist cannot stand in the wind',
+};
+function fail(cause) {
+  if (state !== 'play') return;
+  state = 'fail'; failT = 0; failCause = cause;
+  p.dead = true; p.deathT = 0;
+  p.deathType = cause === 'fall' ? 'fall' : p.form === 'mist' ? 'mist' : p.form === 'ice' ? 'shatter' : 'puddle';
+  Snd.fail(); pulse = 0.25;
+  if (p.deathType === 'mist') emit(26, { x: p.x, y: p.y - 10, type: 'mist', color: '#cbc2e2', sp: 60, up: 10, life: 1.4 });
+  if (p.deathType === 'shatter') emit(18, { x: p.x, y: p.y - 12, type: 'crystal', color: '#f2fbff', sp: 70, up: 60, g: 260, life: 0.9 });
+  if (p.deathType === 'puddle' || p.deathType === 'shatter') emit(14, { x: p.x, y: p.y - 6, type: 'drop', color: '#7fd8e2', sp: 60, up: 70, g: 300, life: 0.8 });
+  $('#msg .cause').textContent = FAIL_TEXT[cause] || '';
+  Input.pid = null;
+}
+
+function clearStage() {
+  state = 'clear'; clearT = 0; quoteShown = false;
+  if (p.form !== 'water') pour('water', true);
+  pulse = 0.7; Snd.clear();
+  const i = stageIdx;
+  save.d.unlocked = Math.max(save.d.unlocked, Math.min(STAGES.length, i + 2));
+  save.d.cleared[i] = true;
+  const prevBest = save.d.best[i];
+  run.lighter = prevBest != null && run.formTime < prevBest - 0.05;
+  run.prevBest = prevBest;
+  if (prevBest == null || run.formTime < prevBest) save.d.best[i] = +run.formTime.toFixed(2);
+  save.write();
+  Input.pid = null;
+}
+
+/* ---------------------------------------------------------------------
+   PARTICLES
+   --------------------------------------------------------------------- */
+function emit(n, o) {
+  for (let i = 0; i < n; i++) {
+    if (parts.length > 420) parts.shift();
+    const a = Math.random() * Math.PI * 2, sp = (o.sp || 20) * (0.4 + Math.random() * 0.8);
+    parts.push({
+      x: o.x + (Math.random() - 0.5) * (o.spread || 8), y: o.y + (Math.random() - 0.5) * 6,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - (o.up || 0) * Math.random(),
+      g: o.g || 0, life: 0, max: (o.life || 0.6) * (0.7 + Math.random() * 0.6),
+      type: o.type, color: o.color, size: o.size || 1, rot: Math.random() * 6,
+    });
+  }
+}
+function updateParts(dt) {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const q = parts[i];
+    q.life += dt;
+    if (q.life >= q.max) { parts.splice(i, 1); continue; }
+    q.vy += q.g * dt;
+    if (q.type === 'mist') { q.vx *= 0.97; q.vy = q.vy * 0.97 - 6 * dt; }
+    if (q.type === 'trail') { q.vx *= 0.9; q.vy *= 0.9; }
+    q.x += q.vx * dt; q.y += q.vy * dt; q.rot += dt * 5;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   10. RENDERING
+   --------------------------------------------------------------------- */
+// ---- Chibi pixel sprites (front view; recognisable bowl cut + yellow suit) ----
+const HEAD = [
+  '..KKKKKK..',
+  '.KKKKKKKK.',
+  'KKKKKKKKKK',
+  'KKKKKKKKKK',
+  'KKSSSKSSKK',
+  'KSEESSEESK',
+  'KSSSSSSSSK',
+  '.SPSSSSPS.',
+  '..SSMMSS..',
+  '...SSSS...',
+];
+const BODY = [
+  '...YYYY...',
+  '.YYYYYYYY.',
+  'SKYYYYYYKS',
+  '.KYYYYYYK.',
+  '..YYYYYY..',
+  '..YK..KY..',
+  '.KKK..KKK.',
+];
+const BODY_CALM = [
+  '...YYYY...',
+  '.YYYYYYYY.',
+  '.KYYSSYYK.',
+  '.KYYYYYYK.',
+  '..YYYYYY..',
+  '.YYK..KYY.',
+  '.KK....KK.',
+];
+const PAL = {
+  normal: { K: '#1a1420', S: '#f0c9a0', E: '#1a1420', P: '#e8a090', M: '#a5524a', Y: '#f2c230' },
+  ice:    { K: '#2a3a58', S: '#e8eef6', E: '#2a3a58', P: '#c9d8ee', M: '#7f93b8', Y: '#e6eccb' },
+  mist:   { K: '#5e5878', S: '#ddd6ea', E: '#5e5878', P: '#cfc3e3', M: '#9a8fb8', Y: '#d2c9e6' },
+};
+
+/* Draw a pixel map with its top-left at (ox, oy). Eyes look toward `facing`. */
+function drawMap(map, ox, oy, pal, { rows = map.length, eye = 0, dither = 0, seed = 0 } = {}) {
+  for (let j = 0; j < rows; j++) {
+    const row = map[j];
+    for (let i = 0; i < row.length; i++) {
+      const ch = row[i];
+      if (ch === '.') continue;
+      if (dither && hash(i * 7.1 + j * 13.3 + seed) < dither && (i < 2 || i > 7 || j < 2)) continue;
+      b.fillStyle = pal[ch === 'E' ? 'S' : ch];
+      b.fillRect(ox + i, oy + j, 1, 1);
+    }
+  }
+  b.fillStyle = pal.E;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < map[j].length; i++) if (map[j][i] === 'E') b.fillRect(ox + i + eye, oy + j, 1, 1);
+}
+function drawChibi(pal, facing, calm, opts = {}) {
+  const bob = calm ? (Math.sin(worldT * 1.6) > 0.3 ? -1 : 0) : 0;
+  drawMap(HEAD, -5, -17 + bob, pal, { eye: calm ? 0 : facing > 0 ? 1 : -1, ...opts });
+  drawMap(calm ? BODY_CALM : BODY, -5, -7, pal, opts);
+}
+
+/* WATER – soft, low, elongated. Head peeks out of a living wave. */
+function drawWater(facing, t) {
+  drawMap(HEAD, -5 + facing * 3, -15, PAL.normal, { rows: 8, eye: facing });
+  const prof = [0.55, 0.8, 0.93, 1, 1, 0.98, 0.92, 0.82];
+  for (let r = 0; r < 8; r++) {
+    const hw = Math.round(13 * prof[r]), y = -8 + r, cx = -facing * 1;
+    for (let i = -hw; i <= hw; i++) {
+      if (r === 0 && Math.sin(i * 0.9 - t * 7 * facing) < -0.2) continue;  // the wave crest moves
+      b.fillStyle = r < 2 ? '#a6ecf2' : r < 6 ? '#55c3d0' : '#2f93a8';
+      b.fillRect(cx + i, y, 1, 1);
+    }
+  }
+  // glints travelling along the body
+  b.fillStyle = '#ffffff';
+  const g = ((t * 14) % 30) - 15;
+  if (Math.abs(g) < 10) b.fillRect(Math.round(g), -6, 1, 1);
+  b.fillRect(Math.round(-facing * 8), -5, 1, 1);
+}
+
+/* ICE – compact, geometric, temporary solidity. Cracks when held too long. */
+function drawIce(strain, t) {
+  drawChibi(PAL.ice, p.facing, false);
+  const pts = [[-6, -25], [6, -25], [11, -17], [10, -4], [5, 0], [-5, 0], [-10, -4], [-11, -17]];
+  b.beginPath(); pts.forEach(([x, y], i) => i ? b.lineTo(x, y) : b.moveTo(x, y)); b.closePath();
+  b.fillStyle = `rgba(200,232,255,${0.42 - strain * 0.12})`; b.fill();
+  b.strokeStyle = '#f4fbff'; b.lineWidth = 1; b.stroke();
+  b.fillStyle = 'rgba(255,255,255,0.55)';
+  b.fillRect(-7, -22, 1, 6); b.fillRect(-6, -23, 3, 1);                    // facet highlight
+  if (Math.sin(t * 3) > 0.6) { b.fillStyle = '#fff'; b.fillRect(7, -19, 1, 1); b.fillRect(6, -18, 3, 1); b.fillRect(7, -17, 1, 1); }
+  if (strain > 0) {                                                         // rigidity shows its cracks
+    b.strokeStyle = `rgba(110,150,200,${0.4 + strain * 0.5})`;
+    b.beginPath(); b.moveTo(-2, -25); b.lineTo(1, -18); b.lineTo(-1, -12);
+    if (strain > 0.4) { b.moveTo(10, -10); b.lineTo(5, -8); b.lineTo(3, -2); }
+    if (strain > 0.7) { b.moveTo(-10, -14); b.lineTo(-5, -12); }
+    b.stroke();
+  }
+}
+
+/* MIST – translucent, fuzzy, floating. Thins when held too long. */
+function drawMist(strain, t) {
+  const fade = 1 - strain * 0.6;
+  for (let k = 0; k < 10; k++) {
+    const a = k / 10 * Math.PI * 2 + t * 0.7, r = 9 + Math.sin(t * 2 + k) * 2;
+    b.fillStyle = `rgba(205,196,230,${0.22 * fade})`;
+    b.beginPath(); b.arc(Math.cos(a) * r, -11 + Math.sin(a) * r * 0.85, 3 + (k % 3), 0, 7); b.fill();
+  }
+  b.fillStyle = `rgba(205,196,230,${0.3 * fade})`;
+  b.beginPath(); b.ellipse(0, 2, 8, 2.2, 0, 0, 7); b.fill();
+  b.globalAlpha *= 0.62 * fade;
+  drawChibi(PAL.mist, p.facing, false, { dither: 0.3 + strain * 0.3, seed: Math.floor(t * 8) });
+}
+
+function drawPuddle(t, form) {
+  const k = clamp(t / 0.45, 0, 1), w = Math.round(lerp(6, 15, ease(k)));
+  b.fillStyle = form === 'ice' ? '#bfe6f5' : '#55c3d0';
+  b.beginPath(); b.ellipse(0, -1, w, 2.5, 0, 0, 7); b.fill();
+  b.fillStyle = '#a6ecf2'; b.fillRect(-w + 3, -3, w, 1);
+  if (k < 1) { b.fillStyle = PAL.normal.K; b.fillRect(-2, -4 + Math.round(k * 2), 4, 2); } // last of the hair, sinking
+}
+
+/* Player with pour morph: old form squashes away while the new one stretches in. */
+function drawPlayer() {
+  const sx = Math.round(p.x - camX), sy = GY + Math.round(p.y);
+  let jx = 0, jy = 0;
+  if (p.strain > 0) { jx = Math.round((Math.random() - 0.5) * 2 * p.strain); }
+  if (p.fizzT > 0) jx += Math.round(Math.sin(p.fizzT * 80));
+  const t = worldT;
+
+  if (p.dead) {
+    if (p.deathType === 'puddle' || p.deathType === 'shatter') {
+      b.save(); b.translate(sx, GY); drawPuddle(p.deathT, p.deathType === 'shatter' ? 'ice' : 'water'); b.restore();
+    } else if (p.deathType === 'fall') {
+      b.save(); b.translate(sx, sy); b.globalAlpha = clamp(1 - p.deathT, 0, 1); drawFormShape(p.form, t); b.restore();
+    }
+    return;
+  }
+
+  const hover = p.form === 'mist' ? Math.round(Math.sin(t * 2.2) * 1.2) : 0;
+  if (p.calm) {
+    // Stillness: the full figure, at ease, with water rings beneath.
+    b.save(); b.translate(sx, sy);
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t * 0.5 + i / 3) % 1);
+      b.strokeStyle = `rgba(150,225,235,${0.45 * (1 - ph)})`;
+      b.beginPath(); b.ellipse(0, 0, 6 + ph * 22, 1.5 + ph * 4, 0, 0, 7); b.stroke();
+    }
+    b.globalAlpha = clamp(p.calmT * 2, 0, 1);
+    drawChibi(PAL.normal, 1, true);
+    b.restore();
+    return;
+  }
+
+  const m = ease(p.morph);
+  const sq = p.squash;
+  if (m < 1) {
+    b.save(); b.translate(sx + jx, sy + jy); b.scale(1 + m * 0.35, 1 - m * 0.45); b.globalAlpha = 1 - m;
+    drawFormShape(p.prev, t); b.restore();
+  }
+  b.save(); b.translate(sx + jx, sy + jy + hover);
+  const stretch = Math.sin(m * Math.PI) * 0.25;
+  const speedStretch = p.form === 'water' ? clamp(Math.abs(p.vx) / 400, 0, 0.12) : 0;
+  b.scale(1 - stretch * 0.5 + sq * 0.18 + speedStretch, 1 + stretch - sq * 0.22 - speedStretch * 0.5);
+  b.globalAlpha = m < 1 ? 0.35 + 0.65 * m : 1;
+  drawFormShape(p.form, t);
+  b.restore();
+}
+function drawFormShape(form, t) {
+  if (form === 'water') drawWater(p.facing, t);
+  else if (form === 'ice') drawIce(p.strain, t);
+  else drawMist(p.strain, t);
+}
+
+// ---- Backgrounds ----
+function sky(top, bottom) {
+  const g = b.createLinearGradient(0, 0, 0, GY);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  b.fillStyle = g; b.fillRect(0, 0, VW, GY + 1);
+}
+function ridge(par, base, amp, freq, color, seed) {
+  b.fillStyle = color; b.beginPath(); b.moveTo(0, GY);
+  for (let x = 0; x <= VW + 3; x += 3) {
+    const wx = (x + camX * par) * freq;
+    b.lineTo(x, base - amp * (vnoise(wx, seed) * 0.7 + vnoise(wx * 2.7, seed + 3) * 0.3));
+  }
+  b.lineTo(VW, GY); b.closePath(); b.fill();
+}
+function cells(par, cell, fn) {
+  const off = camX * par, i0 = Math.floor(off / cell) - 1, i1 = i0 + Math.ceil(VW / cell) + 2;
+  for (let i = i0; i <= i1; i++) fn(Math.round(i * cell - off), i);
+}
+
+function drawBackground(t) {
+  const th = theme;
+  sky(th.sky[0], th.sky[1]);
+  switch (stage.theme) {
+    case 'alley': {
+      cells(0.15, 26, (x, i) => {                       // far towers with a few warm windows
+        const h = 50 + hash(i * 1.3) * 90, w = 18 + hash(i * 2.1) * 8;
+        b.fillStyle = '#1e2737'; b.fillRect(x, GY - h, w, h);
+        b.fillStyle = 'rgba(232,196,122,0.28)';
+        for (let k = 0; k < 6; k++) if (hash(i * 9 + k) > 0.62) b.fillRect(x + 3 + (k % 3) * 5, GY - h + 6 + Math.floor(k / 3) * 9 + (hash(i + k) * 30 | 0), 2, 2);
+      });
+      cells(0.45, 38, (x, i) => {                       // nearer buildings, signboards, wires
+        const h = 30 + hash(i * 3.7 + 1) * 70, w = 30 + hash(i * 1.9) * 8;
+        b.fillStyle = '#151c28'; b.fillRect(x, GY - h, w, h);
+        if (hash(i * 5.3) > 0.55) {
+          b.fillStyle = hash(i) > 0.5 ? 'rgba(200,90,80,0.45)' : 'rgba(90,180,190,0.35)';
+          b.fillRect(x + w - 6, GY - h + 8, 4, 16 + (hash(i * 2) * 10 | 0));
+        }
+      });
+      b.strokeStyle = 'rgba(10,12,18,0.7)'; b.beginPath();
+      for (let x = 0; x <= VW; x += 4) { const wx = x + camX * 0.7; b.lineTo(x, GY - 105 + Math.sin(wx * 0.02) * 6); }
+      b.stroke();
+      break;
+    }
+    case 'bamboo': {
+      ridge(0.06, GY - 70, 30, 0.012, '#c9d6bd', 2);
+      cells(0.2, 11, (x, i) => { if (hash(i * 3.1) > 0.35) { b.fillStyle = '#a7bb9c'; b.fillRect(x, 0, 2, GY); } });
+      cells(0.5, 23, (x, i) => {
+        if (hash(i * 1.7 + 4) < 0.3) return;
+        const sway = Math.round(Math.sin(t * 0.8 + i) * 1);
+        b.fillStyle = '#6f8f63'; b.fillRect(x + sway, 0, 4, GY);
+        b.fillStyle = '#56734d'; for (let y = (hash(i) * 20 | 0); y < GY; y += 22) b.fillRect(x + sway, y, 4, 1);
+        b.fillStyle = 'rgba(95,130,85,0.8)';
+        const ly = 30 + (hash(i * 4.4) * (GY - 70) | 0);
+        b.fillRect(x + sway + 4, ly, 7, 1); b.fillRect(x + sway + 6, ly + 1, 6, 1);
+      });
+      break;
+    }
+    case 'dojo': {
+      b.fillStyle = '#3b2a1e'; b.fillRect(0, GY - 96, VW, 6);
+      cells(0.5, 62, (x, i) => {
+        b.fillStyle = '#ead9b8'; b.fillRect(x + 6, GY - 88, 50, 78);
+        b.fillStyle = '#b39a74';
+        for (let k = 1; k < 4; k++) b.fillRect(x + 6 + k * 12.5, GY - 88, 1, 78);
+        for (let k = 1; k < 6; k++) b.fillRect(x + 6, GY - 88 + k * 13, 50, 1);
+        b.fillStyle = '#3b2a1e'; b.fillRect(x, GY - 92, 6, 92);
+        if (i % 3 === 0) {                                 // paper lantern
+          const lx = x + 31, ly = GY - 118 + Math.sin(t + i) * 1;
+          b.fillStyle = 'rgba(230,120,90,0.15)'; b.beginPath(); b.arc(lx, ly, 12, 0, 7); b.fill();
+          b.fillStyle = '#b0483a'; b.fillRect(lx - 4, ly - 6, 8, 12); b.fillStyle = '#d5735f'; b.fillRect(lx - 3, ly - 5, 2, 10);
+          b.fillStyle = '#2a1c14'; b.fillRect(lx - 3, ly - 7, 6, 1); b.fillRect(lx - 3, ly + 6, 6, 1); b.fillRect(lx, 0, 1, ly - 7);
+        }
+      });
+      break;
+    }
+    case 'court': {
+      b.fillStyle = 'rgba(240,226,200,0.85)'; b.beginPath(); b.arc(VW * 0.72 - camX * 0.02, GY * 0.3, 11, 0, 7); b.fill();
+      b.fillStyle = 'rgba(240,226,200,0.12)'; b.beginPath(); b.arc(VW * 0.72 - camX * 0.02, GY * 0.3, 22, 0, 7); b.fill();
+      cells(0.15, 70, (x, i) => {                       // pagoda roofs
+        if (hash(i * 2.3) < 0.35) return;
+        const h = 40 + hash(i) * 50, cx = x + 35;
+        b.fillStyle = '#28243a';
+        b.fillRect(cx - 12, GY - h, 24, h);
+        for (let k = 0; k < 3; k++) {
+          const ry = GY - h + k * 14, rw = 22 - k * 4;
+          b.beginPath(); b.moveTo(cx - rw - 4, ry + 2); b.quadraticCurveTo(cx, ry - 10, cx + rw + 4, ry + 2); b.lineTo(cx + rw, ry + 4); b.lineTo(cx - rw, ry + 4); b.fill();
+        }
+      });
+      b.fillStyle = '#433d4d'; b.fillRect(0, GY - 36, VW, 36);
+      b.fillStyle = '#2e2a36'; b.fillRect(0, GY - 40, VW, 4);
+      cells(0.5, 16, x => { b.fillStyle = '#3b3545'; b.fillRect(x, GY - 36, 1, 36); });
+      break;
+    }
+    case 'mount': {
+      ridge(0.05, GY - 90, 70, 0.01, '#c3ccd0', 7);
+      b.fillStyle = 'rgba(240,242,242,0.5)'; b.fillRect(0, GY - 70, VW, 26);
+      ridge(0.15, GY - 40, 60, 0.016, '#99a6ad', 11);
+      b.fillStyle = 'rgba(240,242,242,0.45)'; b.fillRect(0, GY - 34, VW, 18);
+      ridge(0.35, GY - 6, 34, 0.025, '#73818a', 19);
+      break;
+    }
+    case 'ink': {
+      const sx = VW * 0.75 - camX * 0.02, sy = GY * 0.32;
+      b.strokeStyle = 'rgba(176,71,58,0.85)'; b.lineWidth = 3;
+      b.beginPath(); b.arc(sx, sy, 14, 0.4, Math.PI * 1.9); b.stroke(); b.lineWidth = 1;
+      ridge(0.06, GY - 60, 70, 0.011, '#d3ccbc', 4);
+      ridge(0.18, GY - 20, 50, 0.02, '#aaa395', 9);
+      const g = b.createLinearGradient(0, GY - 40, 0, GY); g.addColorStop(0, 'rgba(239,233,220,0)'); g.addColorStop(1, 'rgba(239,233,220,0.9)');
+      b.fillStyle = g; b.fillRect(0, GY - 40, VW, 40);
+      break;
+    }
+  }
+}
+
+function drawGround() {
+  const th = theme;
+  b.fillStyle = th.ground; b.fillRect(0, GY, VW, VH - GY);
+  b.fillStyle = th.groundTop; b.fillRect(0, GY, VW, 2);
+  cells(1, 9, (x, i) => {                                  // subtle texture
+    b.fillStyle = 'rgba(0,0,0,0.12)'; if (hash(i * 3.3) > 0.4) b.fillRect(x + (hash(i) * 8 | 0), GY + 4 + (hash(i * 1.1) * 10 | 0), 2, 1);
+    b.fillStyle = 'rgba(255,255,255,0.05)'; if (hash(i * 7.7) > 0.6) b.fillRect(x, GY + 3, 4, 1);
+  });
+  if (stage.theme === 'alley' || stage.theme === 'dojo') {  // reflections on wet stone / polished wood
+    b.fillStyle = 'rgba(160,190,220,0.07)';
+    cells(1, 40, (x, i) => { b.fillRect(x + (hash(i) * 20 | 0), GY + 6 + (hash(i * 2) * 8 | 0), 10 + (hash(i * 3) * 14 | 0), 1); });
+  }
+  if (state === 'title') return;
+  for (const o of obs) {
+    if (o.type !== 'pit') continue;
+    const x = Math.round(o.x - camX);
+    if (x > VW || x + o.w < 0) continue;
+    const g = b.createLinearGradient(0, GY, 0, VH);
+    g.addColorStop(0, th.pit); g.addColorStop(1, '#000');
+    b.fillStyle = g; b.fillRect(x, GY, o.w, VH - GY);
+    b.fillStyle = th.groundTop; b.fillRect(x - 1, GY, 1, 6); b.fillRect(x + o.w, GY, 1, 6);
+  }
+  // the still pool at the end
+  const ex = Math.round(stage.end - camX);
+  if (ex < VW + 80 && ex > -100) {
+    b.fillStyle = th.pool; b.beginPath(); b.ellipse(ex + 22, GY + 4, 30, 3.5, 0, 0, 7); b.fill();
+    b.fillStyle = 'rgba(255,255,255,0.35)'; b.fillRect(ex + 6, GY + 3, 10, 1); b.fillRect(ex + 26, GY + 5, 14, 1);
+    // stone lantern
+    const lx = ex + 64;
+    b.fillStyle = th.solidHi; b.fillRect(lx - 1, GY - 14, 3, 14); b.fillRect(lx - 4, GY - 20, 9, 6); b.fillRect(lx - 5, GY - 22, 11, 2); b.fillRect(lx - 3, GY - 24, 7, 2);
+    b.fillStyle = `rgba(255,214,150,${0.6 + Math.sin(worldT * 2) * 0.15})`; b.fillRect(lx - 2, GY - 19, 5, 4);
+    b.fillStyle = 'rgba(255,214,150,0.12)'; b.beginPath(); b.arc(lx + 0.5, GY - 17, 10, 0, 7); b.fill();
+  }
+}
+
+// ---- Obstacles ----
+function drawWallBlock(x, top, w, bottom) {
+  const th = theme;
+  b.fillStyle = th.solid; b.fillRect(x, top, w, bottom - top);
+  b.fillStyle = th.solidLo;
+  for (let yy = bottom - 6, row = 0; yy > top; yy -= 6, row++) {
+    b.fillRect(x, yy, w, 1);
+    for (let xx = x + (row % 2) * 5 + 2; xx < x + w; xx += 10) b.fillRect(xx, yy - 5, 1, 5);
+  }
+  b.fillStyle = th.solidHi; b.fillRect(x, bottom - 1, w, 1); b.fillRect(x, top, 1, bottom - top);
+}
+
+function drawObstacles(t) {
+  const th = theme;
+  for (const o of obs) {
+    const x = Math.round(o.x - camX);
+    if (x > VW + 20 || x + o.w < -60) continue;
+    switch (o.type) {
+      case 'low': drawWallBlock(x, 0, o.w, GY - o.clear); break;
+
+      case 'veil': {
+        // A hanging veil: cannot be forced or flowed around, only passed through formless.
+        const rip = (o.ripple || 0) + (p && p.form === 'mist' && Math.abs(p.x - (o.x + o.w / 2)) < 16 ? 1 : 0);
+        b.fillStyle = th.solidHi; b.fillRect(x - 3, GY - Math.min(GY - 6, 140), o.w + 6, 2);
+        for (let yy = Math.max(0, GY - Math.min(GY - 6, 138)); yy < GY; yy += 2) {
+          const off = Math.round(Math.sin(yy * 0.12 + t * 2) * (0.6 + rip * 2.2));
+          b.fillStyle = th.veil; b.globalAlpha = 0.82; b.fillRect(x + off, yy, o.w, 2);
+        }
+        b.globalAlpha = 1;
+        b.fillStyle = th.veilMark;
+        const my = GY - 46;
+        b.fillRect(x + o.w / 2 - 1, my - 10, 2, 20); b.fillRect(x + 3, my - 3, o.w - 6, 2); b.fillRect(x + 4, my + 6, 3, 2); b.fillRect(x + o.w - 7, my + 6, 3, 2);
+        b.fillStyle = 'rgba(255,255,255,0.18)'; b.fillRect(x + 2, GY - 120, 1, 110);
+        break;
+      }
+
+      case 'gust': {
+        // Wind streaks flowing against the traveller.
+        const n = Math.ceil(o.w / 5);
+        for (let k = 0; k < n; k++) {
+          const span = o.w + 30, ph = ((t * 150 * o.power + hash(k) * span * 3) % span);
+          const xx = x + o.w + 10 - ph, yy = GY - 3 - Math.round(hash(k * 3.1) * 46), len = 5 + Math.round(hash(k * 5) * 8);
+          const edge = clamp(Math.min(ph, span - ph) / 18, 0, 1);
+          b.fillStyle = th.wind + (0.45 * edge).toFixed(2) + ')';
+          b.fillRect(Math.round(xx), yy, len, 1);
+        }
+        b.fillStyle = th.wind + '0.25)';
+        for (let xx = x; xx < x + o.w; xx += 4) b.fillRect(xx - Math.round(1 + Math.sin(t * 9 + xx) * 1), GY - 2, 1, 2);
+        break;
+      }
+
+      case 'press': {
+        const by = GY + Math.round(o.bottom), top = by - 38;
+        const sh = o.phase === 'shake' ? Math.round(Math.sin(t * 70)) : 0;
+        b.fillStyle = 'rgba(0,0,0,0.25)'; b.fillRect(x + o.w / 2 - 1, 0, 2, top);
+        b.fillStyle = th.solid; b.fillRect(x + sh, top, o.w, 38);
+        b.fillStyle = th.solidHi; b.fillRect(x + sh, top, o.w, 2); b.fillRect(x + sh, by - 1, o.w, 1);
+        b.fillStyle = th.solidLo; b.fillRect(x + sh + 4, top + 8, o.w - 8, 1); b.fillRect(x + sh + 4, top + 20, o.w - 8, 1);
+        b.fillRect(x + sh + o.w / 2 - 3, top + 12, 6, 6);
+        if (o.phase === 'up' || o.phase === 'shake') {  // shadow telegraph on the ground
+          const a = o.phase === 'shake' ? 0.35 : 0.15;
+          b.fillStyle = `rgba(0,0,0,${a})`; b.fillRect(x + 2, GY, o.w - 4, 2);
+        }
+        break;
+      }
+
+      case 'gate': {
+        const by = GY - Math.round(o.clear);
+        b.fillStyle = th.solidLo; b.fillRect(x - 4, GY - 92, 2, 92); b.fillRect(x + o.w + 2, GY - 92, 2, 92); b.fillRect(x - 6, GY - 96, o.w + 12, 4);
+        b.fillStyle = th.solid; b.fillRect(x, 0, o.w, by);
+        b.fillStyle = th.solidLo; for (let xx = x + 4; xx < x + o.w; xx += 6) b.fillRect(xx, 0, 1, by);
+        b.fillStyle = th.solidHi; b.fillRect(x, by - 2, o.w, 2);
+        if (o.clear < 22 && o.clear > 0) { b.fillStyle = 'rgba(255,255,255,0.1)'; b.fillRect(x, by, o.w, Math.round(o.clear)); }
+        break;
+      }
+    }
+  }
+}
+
+function drawParts() {
+  for (const q of parts) {
+    const k = q.life / q.max, a = 1 - k, x = Math.round(q.x - camX), y = Math.round(GY + q.y);
+    switch (q.type) {
+      case 'drop': b.fillStyle = q.color; b.globalAlpha = a; b.fillRect(x, y, q.size, q.size + (q.vy > 40 ? 1 : 0)); break;
+      case 'dust': b.fillStyle = q.color; b.globalAlpha = a * 0.7; b.fillRect(x, y, 1, 1); break;
+      case 'crystal':
+        b.fillStyle = q.color; b.globalAlpha = a;
+        if (Math.sin(q.rot) > 0) { b.fillRect(x, y - 1, 1, 3); b.fillRect(x - 1, y, 3, 1); } else b.fillRect(x, y, 1, 1);
+        break;
+      case 'mist': b.fillStyle = q.color; b.globalAlpha = a * 0.35; b.beginPath(); b.arc(x, y, 1.5 + k * 5, 0, 7); b.fill(); break;
+      case 'trail': b.globalAlpha = 1; b.fillStyle = q.color + (0.4 * a).toFixed(2) + ')'; b.fillRect(x, y, q.size, q.size); break;
+      case 'spark':
+        b.globalAlpha = 1; b.strokeStyle = q.color + (0.5 * a).toFixed(2) + ')';
+        b.beginPath(); b.arc(x, y, 3 + k * 16 * q.size, 0, 7); b.stroke(); break;
+    }
+  }
+  b.globalAlpha = 1;
+}
+
+// ---- Weather (purely atmospheric, screen space) ----
+function updateWeather(dt) {
+  const kind = theme.weather, want = { rain: 90, leaves: 14, dust: 22, fireflies: 14, mist: 6, none: 0 }[kind] || 0;
+  if (weather.kind !== kind) { weather.length = 0; weather.kind = kind; }
+  while (weather.length < want) weather.push({ x: Math.random() * VW, y: Math.random() * VH, s: Math.random(), ph: Math.random() * 6 });
+  for (const w of weather) {
+    if (kind === 'rain') { w.x -= (30 + w.s * 20) * dt; w.y += (240 + w.s * 160) * dt; }
+    else if (kind === 'leaves') { w.x -= (12 + w.s * 10) * dt; w.y += (14 + w.s * 8) * dt; w.ph += dt * 2; }
+    else if (kind === 'dust') { w.x += Math.sin(w.ph += dt * 0.4) * 4 * dt; w.y -= 2 * dt; }
+    else if (kind === 'fireflies') { w.ph += dt; w.x += Math.cos(w.ph * 0.7 + w.s * 9) * 6 * dt; w.y += Math.sin(w.ph * 0.9) * 5 * dt; }
+    else if (kind === 'mist') { w.x -= (6 + w.s * 6) * dt; }
+    if (w.y > VH) { w.y = -4; w.x = Math.random() * VW * 1.2; }
+    if (w.y < -6) w.y = VH;
+    if (w.x < -40) w.x = VW + 20;
+    if (w.x > VW + 40) w.x = -20;
+  }
+}
+function drawWeather() {
+  const kind = weather.kind;
+  for (const w of weather) {
+    const x = Math.round(w.x), y = Math.round(w.y);
+    if (kind === 'rain') { b.fillStyle = `rgba(160,185,215,${0.18 + w.s * 0.2})`; b.fillRect(x, y, 1, 3 + Math.round(w.s * 2)); }
+    else if (kind === 'leaves') { b.fillStyle = 'rgba(110,140,90,0.7)'; b.fillRect(x, y, Math.sin(w.ph) > 0 ? 2 : 1, 1); }
+    else if (kind === 'dust') { b.fillStyle = 'rgba(255,235,200,0.22)'; b.fillRect(x, y, 1, 1); }
+    else if (kind === 'fireflies') { b.fillStyle = `rgba(255,224,150,${0.25 + 0.35 * Math.max(0, Math.sin(w.ph * 2 + w.s * 10))})`; if (y < GY) b.fillRect(x, y, 1, 1); }
+    else if (kind === 'mist') { b.fillStyle = 'rgba(245,247,247,0.18)'; b.beginPath(); b.ellipse(x, GY - 10 - w.s * 40, 30 + w.s * 20, 4, 0, 0, 7); b.fill(); }
+  }
+  if (kind === 'rain') {          // ripples where rain meets the ground
+    b.fillStyle = 'rgba(170,195,225,0.25)';
+    for (let i = 0; i < 4; i++) { const h = hash(Math.floor(worldT * 3) * 7 + i); b.fillRect(Math.round(h * VW), GY + 2 + (i % 3), 3, 1); }
+  }
+}
+
+// ---- Screen-space effects ----
+function drawEffects() {
+  if (pulse > 0.01 && p) {
+    const sx = p.x - camX, sy = GY + p.y - 10;
+    const g = b.createRadialGradient(sx, sy, 0, sx, sy, 70);
+    g.addColorStop(0, `rgba(255,255,255,${0.16 * pulse})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    b.fillStyle = g; b.fillRect(0, 0, VW, VH);
+  }
+  if (wash > 0.001) { b.fillStyle = `rgba(245,240,230,${wash})`; b.fillRect(0, 0, VW, VH); }
+  if (state === 'fail') { b.fillStyle = `rgba(20,24,30,${clamp(failT * 0.25, 0, 0.18)})`; b.fillRect(0, 0, VW, VH); }
+  // soft vignette keeps the eye on the centre
+  const g = b.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * 0.35, VW / 2, VH / 2, Math.max(VW, VH) * 0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.28)');
+  b.fillStyle = g; b.fillRect(0, 0, VW, VH);
+}
+
+/* Hi-res text pass (signs) drawn on the full-resolution canvas */
+function drawSigns() {
+  if (state === 'title' || !p) return;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `italic ${Math.round(15 * DPR)}px "Cormorant Garamond", Georgia, serif`;
+  // Only one sign speaks at a time: the next one ahead (or just passed).
+  const o = obs.find(o => o.type === 'sign' && o.x > p.x - 50);
+  if (o) {
+    const d = o.x - p.x;
+    const a = clamp(Math.min((180 - d) / 60, (d + 50) / 40), 0, 1);
+    const sx = (o.x - camX) * SCALE, sy = (GY - 58) * SCALE;
+    ctx.globalAlpha = a; ctx.fillStyle = theme.text;
+    ctx.fillText(o.text, Math.max(14 * DPR, Math.min(sx, canvas.width - ctx.measureText(o.text).width - 14 * DPR)), sy);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render() {
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  drawBackground(worldT);
+  drawGround();
+  if (state !== 'title') drawObstacles(worldT);
+  if (p) drawPlayer();
+  drawParts();
+  drawWeather();
+  drawEffects();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(buf, 0, 0, VW * SCALE, VH * SCALE);
+  drawSigns();
+}
+
+/* ---------------------------------------------------------------------
+   11. UI FLOW & MAIN LOOP
+   --------------------------------------------------------------------- */
+const chips = [...document.querySelectorAll('.chip')];
+chips.forEach(c => c.addEventListener('pointerdown', e => { e.stopPropagation(); Snd.init(); if (state === 'play') pour(c.dataset.f); }));
+
+function buildDots() {
+  const box = $('#stageDots'); box.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const bt = document.createElement('button');
+    bt.textContent = i + 1; bt.title = s.name;
+    bt.disabled = i >= save.d.unlocked;
+    if (save.d.cleared[i]) bt.classList.add('done');
+    bt.addEventListener('pointerdown', e => { e.stopPropagation(); Snd.init(); startStage(i, true); });
+    box.appendChild(bt);
+  });
+}
+
+let cardTimer = null;
+function showCard() {
+  const c = $('#stageCard');
+  c.querySelector('.num').textContent = ['I', 'II', 'III', 'IV', 'V', 'VI'][stageIdx];
+  c.querySelector('.name').textContent = stage.name;
+  c.querySelector('.lesson').textContent = stage.lesson;
+  c.classList.add('show'); clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => c.classList.remove('show'), 2600);
+}
+
+function startStage(i, fresh) {
+  stageIdx = i; stage = STAGES[i]; theme = THEMES[stage.theme];
+  obs = stage.obs.map(o => ({ ...o, passed: false, watch: 0, bottom: -PRESS_UP, prevBottom: -PRESS_UP, clear: 60, phase: '', held: false, ripple: 0, nearDone: false }));
+  st = 0; p = newPlayer(); camX = 0; timeScale = 1; wash = 0; pulse = 0; parts.length = 0;
+  run.formTime = 0; run.pours = 0;
+  state = 'play';
+  ['#title', '#quote', '#end'].forEach(s => $(s).classList.remove('show'));
+  $('#msg').classList.remove('show');
+  $('#chips').classList.remove('hide');
+  Input.pid = null;
+  if (fresh) showCard();
+}
+
+function showQuote() {
+  quoteShown = true;
+  $('#quote .q').textContent = '“' + stage.quote + '”';
+  const ft = run.formTime;
+  let line = `held a form ${ft.toFixed(1)}s · ${run.pours} change${run.pours === 1 ? '' : 's'}`;
+  if (run.lighter) line += ' · lighter than before';
+  $('#quote .stats').textContent = line;
+  $('#quote').classList.add('show');
+  $('#chips').classList.add('hide');
+  state = 'quote';
+}
+
+function showEnd() {
+  state = 'end';
+  const total = save.d.best.reduce((a, v) => a + (v || 0), 0);
+  $('#end .e3').textContent = `lightest path · ${total.toFixed(1)}s held in form across six stages`;
+  $('#quote').classList.remove('show');
+  $('#end').classList.add('show');
+}
+
+function showTitle() {
+  state = 'title';
+  stageIdx = 0; stage = STAGES[0]; theme = THEMES.alley; obs = [];
+  p = newPlayer(); timeScale = 1; wash = 0; parts.length = 0;
+  buildDots();
+  ['#quote', '#end'].forEach(s => $(s).classList.remove('show'));
+  $('#msg').classList.remove('show'); $('#chips').classList.add('hide'); $('#stageCard').classList.remove('show');
+  $('#title').classList.add('show');
+}
+
+function handleTap() {
+  if (state === 'title') startStage(Math.min(save.d.unlocked - 1, firstUncleared()), true);
+  else if (state === 'fail' && failT > 0.45) startStage(stageIdx, false);
+  else if (state === 'quote' && clearT > 3.2) { if (stageIdx < STAGES.length - 1) startStage(stageIdx + 1, true); else showEnd(); }
+  else if (state === 'end') showTitle();
+}
+function firstUncleared() { for (let i = 0; i < STAGES.length; i++) if (!save.d.cleared[i]) return i; return 0; }
+
+$('#btnSound').classList.toggle('off', !Snd.on);
+$('#btnSound').addEventListener('pointerdown', e => { e.stopPropagation(); Snd.init(); Snd.on = !Snd.on; save.d.sound = Snd.on; save.write(); $('#btnSound').classList.toggle('off', !Snd.on); });
+$('#btnMenu').addEventListener('pointerdown', e => { e.stopPropagation(); showTitle(); });
+
+let chipCache = '';
+function updateChips() {
+  if (!p) return;
+  const key = p.form + (p.form === 'water' ? '' : Math.round(p.hold * 20) + ':' + Math.round(p.strain * 20));
+  if (key === chipCache) return; chipCache = key;
+  for (const c of chips) {
+    const on = c.dataset.f === p.form;
+    c.classList.toggle('active', on);
+    c.classList.toggle('strain', on && p.strain > 0);
+    const v = on ? (p.form === 'water' ? 1 : clamp(Math.min(p.hold, 1 - p.strain), 0, 1)) : 0;
+    c.querySelector('.bar').style.transform = `scaleX(${v.toFixed(2)})`;
+  }
+}
+
+/* One step of the world. */
+function update(realDt) {
+  const dt = realDt * timeScale;
+  worldT += dt;
+  pulse = Math.max(0, pulse - realDt * 1.6);
+
+  if (state === 'title') {
+    camX += 10 * realDt;
+    p.x = camX + VW * 0.42; p.y = 0; p.vx = 20; p.facing = 1;
+  } else {
+    if (state === 'play' || state === 'clear' || state === 'quote' || state === 'fail') st += dt;
+    if (state === 'play' || state === 'clear' || state === 'quote') {
+      updateObstacles(dt);
+      if (state === 'play' || state === 'clear' || state === 'quote') {
+        if (!p.dead) updatePlayer(dt);
+        if (state === 'play') { checkPassage(); if (p.x >= stage.end) clearStage(); }
+      }
+    }
+    if (state === 'fail') {
+      failT += realDt; p.deathT += realDt;
+      if (p.deathType === 'fall') { p.vy += GRAVITY * dt; p.y += p.vy * dt; }
+      if (failT > 0.35) $('#msg').classList.add('show');
+      if (failT > 1.7) startStage(stageIdx, false);
+    }
+    if (state === 'clear' || state === 'quote') {
+      clearT += realDt;
+      timeScale = damp(timeScale, 0.3, 2.5, realDt);           // the world softens and slows
+      wash = clamp(clearT / 2.2, 0, 1) * 0.2;
+      if (clearT > 0.9 && p.form === 'water' && p.morph >= 1) { if (!p.calm) { p.calm = true; p.calmT = 0; } p.calmT += realDt; }
+      if (clearT > 1.7 && !quoteShown) showQuote();
+    }
+    // camera: lead a little ahead of the current
+    const target = clamp(p.x - VW * 0.27, 0, Math.max(0, stage.end + 90 - VW));
+    camX = damp(camX, target, 6, realDt);
+    updateChips();
+  }
+  updateParts(dt);
+  updateWeather(dt);
+}
+
+let last = performance.now();
+function frame(now) {
+  const realDt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(realDt);
+  render();
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', () => { last = performance.now(); });
+
+showTitle();
+requestAnimationFrame(frame);
+
+// Small hook for automated testing / tinkering in the console.
+window.__bw = { get p() { return p; }, get state() { return state; }, get obs() { return obs; }, startStage, pour, Input, get st() { return st; } };
+</script>
+</body>
+</html>
